@@ -1,9 +1,10 @@
 import Joi from 'joi';
-import {
-  stringValidator,
-} from '../../../utils';
+import { stringValidator, timeZoneValidator } from '../../../utils';
 
-export default Joi.object(((messageKey) => ({
-  firstName: stringValidator(messageKey, 'firstName'),
-  lastName: stringValidator(messageKey, 'lastName'),
-}))('updateUserProfile')).options({ stripUnknown: true });
+export default Joi.object(
+  ((messageKey) => ({
+    firstName: stringValidator(messageKey, 'firstName'),
+    lastName: stringValidator(messageKey, 'lastName'),
+    timeZone: timeZoneValidator(messageKey, 'timeZone'),
+  }))('updateUserProfile')
+).options({ stripUnknown: true });
