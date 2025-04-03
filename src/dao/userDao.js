@@ -39,14 +39,15 @@ class UserDao {
 
     await client.query(
       `INSERT INTO user_details
-      (user_id, first_name, last_name, created_by, updated_by)
-      VALUES ($1, $2, $3, $4, $5)`,
+      (user_id, first_name, last_name, created_by, updated_by, timezone)
+      VALUES ($1, $2, $3, $4, $5, $6)`,
       [
         userId,
         createUserDto.firstName,
         createUserDto.lastName,
         detailsCreatedBy,
         detailsCreatedBy,
+        createUserDto.timezone,
       ]
     );
 
