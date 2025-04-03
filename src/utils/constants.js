@@ -3,7 +3,7 @@ export const STATUS = Object.freeze({
   INACTIVE: 'INACTIVE',
 });
 
-export const PRIORITY_STATUS = Object.freeze(['HIGH', 'LOW']);
+export const PRIORITY_STATUS = Object.freeze(['HIGH', 'MEDIUM', 'LOW']);
 
 export const TASK_STATUS = Object.freeze([
   'PENDING',
@@ -11,8 +11,4 @@ export const TASK_STATUS = Object.freeze([
   'INPROGRESS',
 ]);
 
-export const REMINDER_STATUS = Object.freeze([
-  'PENDING',
-  'SENT',
-  'FAILED',
-]);
+export const REMINDER_STATUS = Object.freeze(['PENDING', 'SENT', 'FAILED']);

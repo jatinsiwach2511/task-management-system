@@ -251,6 +251,7 @@ export default class TaskService {
     });
   }
 
+  // Done
   async updateShareTaskPermission(dto, actionUser) {
     return this.txs.withTransaction(async (client) => {
       const messageKey = 'updateShareTaskPermission';
@@ -268,18 +269,20 @@ export default class TaskService {
           formatErrorResponse(messageKey, 'permissionDenied')
         );
 
+      const serverError = new HttpException.ServerError(
+        formatErrorResponse(messageKey, 'unableToUpdate')
+      );
       try {
         const updateShareTaskPermissionDto =
           TaskService.makeShareTaskPermissionDto(dto, actionUser);
-        await this.dao.updateShareTaskPermission(
+        const success = await this.dao.updateShareTaskPermission(
           client,
           updateShareTaskPermissionDto
         );
+        if (!success) throw serverError;
         return formatSuccessResponse(messageKey, 'updatedSuccessfully');
       } catch (err) {
-        throw new HttpException.ServerError(
-          formatErrorResponse(messageKey, 'unableToUpdate')
-        );
+        throw serverError;
       }
     });
   }
@@ -350,8 +353,9 @@ export default class TaskService {
       task: {
         title: dto.title,
         description: dto?.description,
-        dueDate: dto.dueDate,
+        due_on: dto.dueDate,
         priority: dto.priority,
+        permission_level: permissionLevel.OWNER,
         createdBy: actionUser.id,
         updatedBy: actionUser.id,
       },
