@@ -1,96 +1,96 @@
 /* eslint-disable no-console */
-import convict from 'convict';
-import dotenv from 'dotenv';
+import convict from "convict";
+import dotenv from "dotenv";
 
 dotenv.config();
 
 const configLoader = convict({
   env: {
-    format: ['prod', 'dev', 'stage'],
-    default: 'dev',
-    arg: 'nodeEnv',
-    env: 'NODE_ENV',
+    format: ["prod", "dev", "stage"],
+    default: "dev",
+    arg: "nodeEnv",
+    env: "NODE_ENV",
   },
   port: {
-    format: 'port',
+    format: "port",
     default: 8080,
-    env: 'PORT',
+    env: "PORT",
   },
   featureLevel: {
-    format: ['development', 'staging', 'production'],
-    default: 'development',
-    env: 'FEATURE_LEVEL',
+    format: ["development", "staging", "production"],
+    default: "development",
+    env: "FEATURE_LEVEL",
   },
   db: {
     credentials: {
       user: {
         format: String,
-        default: '',
-        env: 'DB_USER',
+        default: "",
+        env: "DB_USER",
       },
       password: {
         format: String,
-        default: '',
-        env: 'DB_PASSWORD',
+        default: "",
+        env: "DB_PASSWORD",
       },
     },
     host: {
       format: String,
-      default: '',
-      env: 'DB_HOST',
+      default: "",
+      env: "DB_HOST",
     },
     name: {
       format: String,
-      default: '',
-      env: 'DB_NAME',
+      default: "",
+      env: "DB_NAME",
     },
     port: {
-      format: 'port',
+      format: "port",
       default: 5432,
-      env: 'DB_PORT',
+      env: "DB_PORT",
     },
   },
   authTokens: {
     privateKey: {
-      format: '*',
-      default: '',
-      env: 'JWT_PRIVATE_KEY',
+      format: "*",
+      default: "",
+      env: "JWT_PRIVATE_KEY",
     },
     publicKey: {
-      format: '*',
-      default: '',
-      env: 'JWT_PUBLIC_KEY',
+      format: "*",
+      default: "",
+      env: "JWT_PUBLIC_KEY",
     },
     issuer: {
       format: String,
-      default: '[project_name]',
+      default: "[project_name]",
     },
     algorithm: {
       format: String,
-      default: 'ES512',
+      default: "RS256",
     },
     audience: {
       web: {
         format: String,
-        default: 'WEB',
+        default: "WEB",
       },
       app: {
         format: String,
-        default: 'APP',
+        default: "APP",
       },
     },
     version: {
-      format: 'int',
+      format: "int",
       default: 1,
     },
   },
   encryptionKey: {
     format: String,
-    default: '',
-    env: 'ENCRYPTION_KEY',
+    default: "",
+    env: "ENCRYPTION_KEY",
   },
 });
 
-configLoader.validate({ allowed: 'strict' });
+configLoader.validate({ allowed: "strict" });
 const config = configLoader.getProperties();
 export default config;
