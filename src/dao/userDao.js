@@ -21,6 +21,7 @@ class UserDao {
                 FROM users u\n${this.userJoins}`;
 
   async createUser(client, createUserDto, createdBy) {
+    client.query("BEGIN");
     const res = await client.query(
       `INSERT INTO users 
       (email, password, status, created_by, updated_by) 
@@ -47,10 +48,10 @@ class UserDao {
         createUserDto.lastName,
         detailsCreatedBy,
         detailsCreatedBy,
-        createUserDto.timezone,
+        createUserDto.timeZone,
       ]
     );
-
+    client.query("COMMIT");
     return userId;
   }
 
