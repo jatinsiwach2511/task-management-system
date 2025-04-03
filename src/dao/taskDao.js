@@ -25,6 +25,7 @@ class taskDao {
       const res2 = await client.query(sql2, args2);
       const usertaskid = Mapper.getId(res2);
       if (createTaskDto.reminder.createReminder) {
+        console.log("=====reminderobj", createTaskDto.reminder);
         const { createReminder, ...reminderDto } = createTaskDto.reminder;
         const reminderobj = {
           ...reminderDto,
@@ -40,6 +41,7 @@ class taskDao {
     } catch (err) {
       await client.query("ROLLBACK");
       console.error(`❌ Error: Task creation failed! ${err}`);
+      throw new Error(`Task creation failed! ${err}`);
     }
   }
   async updateTask(client, updateTaskDto) {
@@ -53,6 +55,7 @@ class taskDao {
       return res1.rowCount === 1;
     } catch (err) {
       console.error(`❌ Error: Task updation failed! ${err}`);
+      throw new Error(`Error: Task updation failed! ${err}`);
     }
   }
   async deleteTask(client, taskId) {
@@ -63,6 +66,7 @@ class taskDao {
       return res.rowCount === 1;
     } catch (err) {
       console.error(`❌ Error: Task deletion failed! ${err}`);
+      throw new Error(`Error: Task deletion failed! ${err}`);
     }
   }
 }
