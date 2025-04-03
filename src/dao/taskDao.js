@@ -8,15 +8,15 @@ class taskDao {
       await client.query("BEGIN");
       const { sql: sql1, args: args1 } = Queries.creatorFor(
         "tasks",
-        createTaskDto.taskDto
+        createTaskDto.task
       );
       const res1 = await client.query(sql1, args1);
       const taskid = Mapper.getId(res1);
       const usertaskobj = {
-        userid: createTaskDto.userid,
+        userid: createTaskDto.task.created_by,
         taskid: taskid,
-        permission_level: "owner",
-        assigned_by: createTaskDto.userid,
+        permission_level: "OWNER",
+        assigned_by: createTaskDto.task.created_by,
       };
       const { sql: sql2, args: args2 } = Queries.creatorFor(
         "usertasks",
@@ -24,9 +24,10 @@ class taskDao {
       );
       const res2 = await client.query(sql2, args2);
       const usertaskid = Mapper.getId(res2);
-      if (createTaskDto.reminder) {
+      if (createTaskDto.reminder.createReminder) {
+        const { createReminder, ...reminderDto } = createTaskDto.reminder;
         const reminderobj = {
-          ...createTaskDto.reminder,
+          ...reminderDto,
           usertaskid: usertaskid,
         };
         const { sql: sql3, args: args3 } = Queries.creatorFor(

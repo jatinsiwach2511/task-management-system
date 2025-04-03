@@ -1,7 +1,7 @@
 /* Replace with your SQL commands */
 CREATE TABLE reminders (
     id BIGSERIAL PRIMARY KEY,
-    usertaskid BIGSERIAL NOT NULL REFERENCES usertasks(usertaskid) ON UPDATE CASCADE ON DELETE CASCADE,
+    usertaskid BIGSERIAL NOT NULL REFERENCES usertasks(id) ON UPDATE CASCADE ON DELETE CASCADE,
     reminder_time TIMESTAMPTZ NOT NULL,
     message VARCHAR(250),
     created_on TIMESTAMPTZ DEFAULT current_timestamp,

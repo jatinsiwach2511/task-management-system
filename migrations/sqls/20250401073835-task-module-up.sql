@@ -3,8 +3,8 @@ CREATE TABLE tasks (
   title VARCHAR(250) NOT NULL,
   description VARCHAR(1000) NOT NULL,
   due_on TIMESTAMPTZ DEFAULT NULL,
-  status VARCHAR(11) NOT NULL DEFAULT 'pending' CHECK (status IN ('pending','in-progress','completed')),
-  priority VARCHAR(11) NOT NULL DEFAULT 'medium' CHECK (priority IN ('low','medium','high')),
+  status VARCHAR(11) NOT NULL DEFAULT 'PENDING' CHECK (status IN ('PENDING','INPROGRESS','COMPLETED')),
+  priority VARCHAR(11) NOT NULL DEFAULT 'MEDIUM' CHECK (priority IN ('LOW','MEDIUM','HIGH')),
   reserve1 VARCHAR(1), -- reserved column	
   reserve2 VARCHAR(1), -- reserved column	
   reserve3 VARCHAR(1), -- reserved column	
