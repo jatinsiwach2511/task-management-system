@@ -16,6 +16,7 @@ import {
   updateTaskSchema,
   updateUserProfileSchema,
 } from "../models";
+import updateTaskDueDateSchema from "../models/schemas/task/updateTaskDueDateSchema";
 
 export default () => {
   // Profile related
@@ -158,6 +159,21 @@ export default () => {
       const { id } = req.params;
       const dto = await updateUserTaskSchema.validateAsync(req.body);
       return await service.updateUserTask(
+        { id, ...dto },
+        { ...req.currentUser }
+      );
+    }
+  );
+
+  patch(
+    featureLevel.production,
+    Right.user.UPDATE_TASK_DUE_DATE,
+    routes.task.UPDATE_TASK_DUE_DATE,
+    async (req) => {
+      const service = Container.get(TaskService);
+      const { id } = req.params;
+      const dto = await updateTaskDueDateSchema.validateAsync(req.body);
+      return await service.updateTaskDueDate(
         { id, ...dto },
         { ...req.currentUser }
       );

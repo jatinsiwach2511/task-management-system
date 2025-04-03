@@ -4,6 +4,7 @@ import {
   formatSuccessResponse,
   HttpException,
   isWithinTimeRange,
+  messageResponse,
 } from '../utils';
 import { TaskDao } from '../dao';
 import UserService from './userService';
@@ -26,6 +27,9 @@ export default class TaskService {
   async createTask(dto, actionUser) {
     return this.txs.withTransaction(async (client) => {
       const messageKey = 'createTask';
+      const serverError = new HttpException.ServerError(
+        formatErrorResponse(messageKey, 'unableToCreate')
+      );
       if (
         dto?.reminderType === 'CUSTOM' &&
         dto?.remindAt &&
@@ -37,12 +41,13 @@ export default class TaskService {
       }
       try {
         const createTaskDto = TaskService.makeCreateTaskDto(dto, actionUser);
-        await this.dao.createTask(client, createTaskDto);
-        return formatSuccessResponse(messageKey, 'createdSuccessfully');
-      } catch (err) {
-        throw new HttpException.ServerError(
-          formatErrorResponse(messageKey, 'unableToCreate')
+        const success = await this.dao.createTask(client, createTaskDto);
+        if (!success) throw serverError;
+        return messageResponse(
+          formatSuccessResponse(messageKey, 'createdSuccessfully')
         );
+      } catch (err) {
+        throw serverError;
       }
     });
   }
@@ -72,14 +77,15 @@ export default class TaskService {
   async updateTask(dto, actionUser) {
     return this.txs.withTransaction(async (client) => {
       const messageKey = 'updateTask';
+      const serverError = new HttpException.ServerError(
+        formatErrorResponse(messageKey, 'unableToUpdate')
+      );
       const task = await this.dao.findTaskById(client, dto.id, actionUser.id);
-
       if (!task) {
         throw new HttpException.NotFound(
           formatErrorResponse(messageKey, 'notFound')
         );
       }
-
       if (
         !(
           TaskService.hasTaskPermission(
@@ -92,33 +98,29 @@ export default class TaskService {
         throw new HttpException.Forbidden(
           formatErrorResponse(messageKey, 'permissionDenied')
         );
-
-      const serverError = new HttpException.ServerError(
-        formatErrorResponse(messageKey, 'unableToUpdate')
-      );
-
       try {
         const updateTaskDto = TaskService.makeUpdateTaskDto(dto, actionUser);
         const success = await this.dao.updateTask(client, updateTaskDto);
         if (!success) throw serverError;
-        return formatSuccessResponse(messageKey, 'updatedSuccessfully');
+        return messageResponse(
+          formatSuccessResponse(messageKey, 'updatedSuccessfully')
+        );
       } catch (err) {
         throw serverError;
       }
     });
   }
 
+  // Done
   async updateTaskDueDate(dto, actionUser) {
     return this.txs.withTransaction(async (client) => {
       const messageKey = 'updateTaskDueDate';
       const task = await this.dao.findTaskById(client, dto.id, actionUser.id);
-
       if (!task) {
         throw new HttpException.NotFound(
           formatErrorResponse(messageKey, 'notFound')
         );
       }
-
       if (
         !(
           TaskService.hasTaskPermission(
@@ -131,7 +133,6 @@ export default class TaskService {
         throw new HttpException.Forbidden(
           formatErrorResponse(messageKey, 'permissionDenied')
         );
-
       try {
         const updateTaskDueDateDto = TaskService.makeUpdateTaskDueDateDto(
           dto,
@@ -146,12 +147,13 @@ export default class TaskService {
         if (isWithinTimeRange(dto.dueDate)) {
           await this.dao.deleteRemindersInBatch(dto.id);
         } else if (!reminders || reminders.length === 0) {
-          await this.dao.createRemindersInBatch(dto);
+          await this.dao.createRemindersInBatch(dto.id);
         } else {
-          await this.dao.updateRemindersInBatch(dto);
+          await this.dao.updateRemindersInBatch(dto.id);
         }
-
-        return formatSuccessResponse(messageKey, 'updatedSuccessfully');
+        return messageResponse(
+          formatSuccessResponse(messageKey, 'updatedSuccessfully')
+        );
       } catch (err) {
         throw new HttpException.ServerError(
           formatErrorResponse(messageKey, 'unableToUpdate')
@@ -160,7 +162,7 @@ export default class TaskService {
     });
   }
 
-  // Done
+  
   async deleteTask(id, actionUser) {
     return this.txs.withTransaction(async (client) => {
       const messageKey = 'deleteTask';
@@ -197,7 +199,6 @@ export default class TaskService {
     });
   }
 
-  // Done
   async getTasksStatus(userId) {
     return this.txs.withTransaction(async (client) => {
       const messageKey = 'getTasksStatus';
@@ -251,7 +252,6 @@ export default class TaskService {
     });
   }
 
-  // Done
   async updateShareTaskPermission(dto, actionUser) {
     return this.txs.withTransaction(async (client) => {
       const messageKey = 'updateShareTaskPermission';
@@ -321,7 +321,6 @@ export default class TaskService {
     return this.txs.withTransaction(async (client) => {
       const messageKey = 'updateUserTask';
       const task = await this.dao.findTaskById(client, dto.id, actionUser.id);
-
       if (!task) {
         throw new HttpException.NotFound(
           formatErrorResponse(messageKey, 'notFound')
@@ -355,15 +354,18 @@ export default class TaskService {
         description: dto?.description,
         due_on: dto.dueDate,
         priority: dto.priority,
-        createdBy: actionUser.id,
-        updatedBy: actionUser.id,
+        created_by: actionUser.id,
+        updated_by: actionUser.id,
       },
       reminder: {
         // To check due date is less than 1hr
-        createReminder: !isWithinTimeRange(dto.dueDate),
+        // createReminder: !isWithinTimeRange(dto.dueDate),
+        createReminder: true,
         type: isDueSoon ? undefined : dto.reminderType,
-        reminder_time: isDueSoon ? undefined : dto.remindAt,
-        message: isDueSoon ? undefined : dto.reminderMessage,
+        // reminder_time: isDueSoon ? undefined : dto.remindAt,
+        // message: isDueSoon ? undefined : dto.reminderMessage,
+        reminder_time: dto.remindAt,
+        message: dto.reminderMessage,
       },
     };
   }
@@ -374,7 +376,7 @@ export default class TaskService {
       description: dto?.description,
       priority: dto.priority,
       status: dto.status,
-      updatedBy: actionUser.id,
+      updated_by: actionUser.id,
     };
   }
 
@@ -416,16 +418,17 @@ export default class TaskService {
       taskId: dto.id,
       userId: dto.userId,
       permission: dto.permission,
-      updatedBy: actionUser.id,
+      updated_by: actionUser.id,
     };
   }
 
   static makeUpdateReminderDto(dto, actionUser) {
     return {
       id: dto.id,
+      type: dto.type,
       remindAt: dto?.remindAt,
       message: dto?.message,
-      updatedBy: actionUser.id,
+      updated_by: actionUser.id,
     };
   }
 
@@ -433,7 +436,7 @@ export default class TaskService {
     return {
       id: dto.id,
       status: dto.status,
-      updatedBy: actionUser.id,
+      updated_by: actionUser.id,
     };
   }
 

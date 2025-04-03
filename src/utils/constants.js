@@ -12,3 +12,5 @@ export const TASK_STATUS = Object.freeze([
 ]);
 
 export const REMINDER_STATUS = Object.freeze(['PENDING', 'SENT', 'FAILED']);
+
+export const REMINDER_TYPE = Object.freeze(['CUSTOM, DEFAULT']);

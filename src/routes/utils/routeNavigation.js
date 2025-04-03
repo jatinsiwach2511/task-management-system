@@ -27,5 +27,6 @@ export default Object.freeze({
     SHARE_TASK_BY_ID: `${API_ROOT_V1}/share-task/:id`,
     UPDATE_REMINDER: `${TASK_ROOT}/reminder/:id`,
     UPDATE_SHARE_TASK_PERMISSION: `${API_ROOT_V1}/share-task/:id`,
+    UPDATE_TASK_DUE_DATE: `${TASK_ROOT}/due-date/:id`,
   },
 });

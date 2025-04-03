@@ -1,6 +1,7 @@
 import Joi from 'joi';
 import {
   PRIORITY_STATUS,
+  REMINDER_TYPE,
   requiredEnumValidator,
   requiredStringValidator,
   requiredUtcTimeDateValidator,
@@ -14,7 +15,12 @@ export default Joi.object(
     description: stringValidator(messageKey, 'description'),
     dueDate: requiredUtcTimeDateValidator(messageKey, 'dueDate'),
     priority: requiredEnumValidator(PRIORITY_STATUS, messageKey, 'priority'),
+    reminderType: requiredEnumValidator(
+      REMINDER_TYPE,
+      messageKey,
+      'reminderType'
+    ),
     remindAt: utcTimeDateValidator(messageKey, 'remindAt'),
-    reminderNote: stringValidator(messageKey, 'reminderNote'),
+    reminderMessage: stringValidator(messageKey, 'reminderMessage'),
   }))('createTask')
 ).options({ stripUnknown: true });
