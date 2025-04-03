@@ -3,6 +3,7 @@ import {
   convertIsoToLocalDateTime,
   formatSuccessResponse,
   HttpException,
+  isWithinTimeRange,
 } from '../utils';
 import { TaskDao } from '../dao';
 import UserService from './userService';
@@ -21,12 +22,17 @@ export default class TaskService {
     this.userService = Container.get(UserService);
   }
 
+  // Done
   async createTask(dto, actionUser) {
     return this.txs.withTransaction(async (client) => {
       const messageKey = 'createTask';
-      if (await this.dao.findDuplicateTask(client, dto, actionUser)) {
-        throw new HttpException.Conflict(
-          formatErrorResponse(messageKey, 'duplicateTask')
+      if (
+        dto?.reminderType === 'CUSTOM' &&
+        dto?.remindAt &&
+        !isReminderWithinDueTime(dto.remindAt, dto.dueDate)
+      ) {
+        throw new HttpException.BadRequest(
+          formatErrorResponse(messageKey, 'reminderTimeExceeds')
         );
       }
       try {
@@ -44,10 +50,11 @@ export default class TaskService {
   // Filterd data
   async getAllTasks() {}
 
+  // Done
   async getTaskById(id, actionUser) {
     return this.txs.withTransaction(async (client) => {
       const messageKey = 'getTaskById';
-      const task = await this.dao.findTaskById(client, id);
+      const task = await this.dao.findTaskById(client, id, actionUser.id);
       if (!task) {
         throw new HttpException.NotFound(
           formatErrorResponse(messageKey, 'notFound')
@@ -61,6 +68,7 @@ export default class TaskService {
     });
   }
 
+  // Done
   async updateTask(dto, actionUser) {
     return this.txs.withTransaction(async (client) => {
       const messageKey = 'updateTask';
@@ -85,14 +93,17 @@ export default class TaskService {
           formatErrorResponse(messageKey, 'permissionDenied')
         );
 
+      const serverError = new HttpException.ServerError(
+        formatErrorResponse(messageKey, 'unableToUpdate')
+      );
+
       try {
         const updateTaskDto = TaskService.makeUpdateTaskDto(dto, actionUser);
-        await this.dao.updateTask(client, updateTaskDto);
+        const success = await this.dao.updateTask(client, updateTaskDto);
+        if (!success) throw serverError;
         return formatSuccessResponse(messageKey, 'updatedSuccessfully');
       } catch (err) {
-        throw new HttpException.ServerError(
-          formatErrorResponse(messageKey, 'unableToUpdate')
-        );
+        throw serverError;
       }
     });
   }
@@ -149,6 +160,7 @@ export default class TaskService {
     });
   }
 
+  // Done
   async deleteTask(id, actionUser) {
     return this.txs.withTransaction(async (client) => {
       const messageKey = 'deleteTask';
@@ -172,22 +184,23 @@ export default class TaskService {
         throw new HttpException.Forbidden(
           formatErrorResponse(messageKey, 'permissionDenied')
         );
-
+      const serverError = new HttpException.ServerError(
+        formatErrorResponse(messageKey, 'unableToDelte')
+      );
       try {
-        await this.dao.deleteTask(client, id);
+        const success = await this.dao.deleteTask(client, id);
+        if (!success) throw serverError;
         return formatSuccessResponse(messageKey, 'deletedSuccessfully');
       } catch (err) {
-        throw new HttpException.ServerError(
-          formatErrorResponse(messageKey, 'unableToDelte')
-        );
+        throw serverError;
       }
     });
   }
 
+  // Done
   async getTasksStatus(userId) {
     return this.txs.withTransaction(async (client) => {
       const messageKey = 'getTasksStatus';
-      // depend on task getTasks
       const userTasks = await this.dao.getTasks({ userId: userId });
       if (!userTasks)
         throw new HttpException.NotFound(
@@ -213,11 +226,19 @@ export default class TaskService {
         );
       }
 
+      if (
+        !TaskService.hasTaskPermission(permissionLevel.OWNER, task.permission)
+      )
+        throw new HttpException.Forbidden(
+          formatErrorResponse(messageKey, 'permissionDenied')
+        );
+
       if (await this.dao.findDuplicate(client, dto, actionUser)) {
         throw new HttpException.Conflict(
           formatErrorResponse(messageKey, 'duplicateTask')
         );
       }
+
       try {
         const createTaskDto = TaskService.makeCreateTaskDto(dto, actionUser);
         await this.dao.createTask(client, createTaskDto);
@@ -324,18 +345,32 @@ export default class TaskService {
   }
 
   static makeCreateTaskDto(dto, actionUser) {
-    // check for reminder creation
+    const isDueSoon = isWithinTimeRange(dto.dueDate);
     return {
-      ...dto,
-      createdBy: actionUser.id,
-      updatedBy: actionUser.id,
-      reminder,
+      task: {
+        title: dto.title,
+        description: dto?.description,
+        dueDate: dto.dueDate,
+        priority: dto.priority,
+        createdBy: actionUser.id,
+        updatedBy: actionUser.id,
+      },
+      reminder: {
+        // To check due date is less than 1hr
+        createReminder: !isWithinTimeRange(dto.dueDate),
+        type: isDueSoon ? undefined : dto.reminderType,
+        remindAt: isDueSoon ? undefined : dto.remindAt,
+        message: isDueSoon ? undefined : dto.reminderMessage,
+      },
     };
   }
 
   static makeUpdateTaskDto(dto, actionUser) {
     return {
-      ...dto,
+      title: dto.title,
+      description: dto?.description,
+      priority: dto.priority,
+      status: dto.status,
       updatedBy: actionUser.id,
     };
   }
@@ -345,6 +380,7 @@ export default class TaskService {
       id: task.id,
       status: task.status,
       dueDate: convertIsoToLocalDateTime(task.dueDate, timeZone),
+      overdue: isOverdue(task.dueDate),
     }));
   }
 
@@ -352,22 +388,23 @@ export default class TaskService {
     const dueDate = convertIsoToLocalDateTime(task.dueDate, timeZone);
     const remindAt = convertIsoToLocalDateTime(task.remindAt, timeZone) || null;
     return {
-      id: 1,
-      title: 'Do some task',
-      description: 'abc',
+      id: task.id,
+      title: task.title,
+      description: task?.description,
       // Formated based on user zone
-      dueDate: '2025-03-27 18:00:00',
+      dueDate: task.dueDate,
       timeZone,
-      priority: 'HIGH',
-      status: 'PENDING',
-      createdBy: 'Virat',
+      priority: task.priority,
+      status: task.status,
+      permissions: task.permission,
+      // Should be a name
+      createdBy: task.createdBy,
       // Reminder = custom | default | null (if due date in less than 1hr)
-      reminder: 'default',
+      reminder: task.reminder,
+      reminderType: task.reminderType,
       // Nullable | formated to user zone preference
-      remindAt,
-      reminderMessage: 'abc',
-      // Permission = VIEW | EDIT | DELETE
-      permissions: 'VIEW',
+      remindAt: task.remindAt,
+      reminderMessage: task.reminderMessage,
     };
   }
 

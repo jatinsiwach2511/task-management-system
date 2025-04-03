@@ -1,6 +1,6 @@
-import moment from "moment";
-import { PasswordHash, userUpdateMap, userDetailsUpdateMap } from "../models";
-import { Role } from "../auth";
+import moment from 'moment';
+import { PasswordHash, userUpdateMap, userDetailsUpdateMap } from '../models';
+import { Role } from '../auth';
 import {
   QueryBuilder,
   Mapper,
@@ -8,7 +8,7 @@ import {
   parserId,
   parserDate,
   parserInteger,
-} from "./helper";
+} from './helper';
 
 class UserDao {
   userJoins = `LEFT JOIN user_roles ur ON ur.user_id = u.id
@@ -57,17 +57,17 @@ class UserDao {
 
   async updateUser(client, updateUserDto) {
     const { sql: sql1, args: args1 } = Queries.updaterFor(
-      "users",
+      'users',
       userUpdateMap,
       updateUserDto
     );
     const res1 = await client.query(sql1, args1);
 
     const { sql: sql2, args: args2 } = Queries.updaterFor(
-      "user_details",
+      'user_details',
       userDetailsUpdateMap,
       updateUserDto,
-      "user_id"
+      'user_id'
     );
     const res2 = await client.query(sql2, args2);
 
@@ -142,7 +142,7 @@ class UserDao {
   }
 
   async deleteUserById(client, id) {
-    const res = await client.query("DELETE FROM users WHERE id = $1", [id]);
+    const res = await client.query('DELETE FROM users WHERE id = $1', [id]);
     return res.rowCount === 1;
   }
 
@@ -163,13 +163,14 @@ class UserDao {
     );
 
     if (ignoreId) {
-      qb.append("AND id != ?", [ignoreId]);
+      qb.append('AND id != ?', [ignoreId]);
     }
 
     const { sql, args } = qb.build();
     const res = await client.query(sql, args);
     return Mapper.getId(res) !== 0;
   }
+
   async getTimeZone(client, userId) {
     try {
       const res = await client.query(

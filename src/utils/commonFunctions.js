@@ -119,7 +119,7 @@ export const convertIsoToLocalDateTime = (utcDateTime, timeZone) => {
 
 export const isWithinTimeRange = (dateTime) => {
   if (isUndefined(dateTime)) return undefined;
-  const givenTime = moment(dateTime); // Parse timestamp
+  const givenTime = moment(dateTime);
   const oneHourBefore = givenTime.clone().subtract(1, 'hour');
   return moment().isSameOrAfter(oneHourBefore);
 };
