@@ -1,12 +1,13 @@
-import Joi from 'joi';
-import moment from 'moment';
+import Joi from "joi";
+import moment from "moment";
 import {
   joiStringError,
   joiNumberError,
   joiBooleanError,
   joiEmailError,
   joiDateError,
-} from './apiResponses';
+  JoiObjectError,
+} from "./apiResponses";
 
 export const idValidator = () => Joi.number().integer().positive();
 
@@ -36,7 +37,7 @@ export const nullableStringValidator = (messageKey, key) =>
 export const dateValidator = ({ onlyPast } = {}) => {
   let validator = Joi.date().iso().raw();
   if (onlyPast) {
-    validator = validator.max('now');
+    validator = validator.max("now");
   }
   return validator;
 };
@@ -59,11 +60,11 @@ export const validateEndDate = (startDateKey) => (value, helpers) => {
   }
 
   if (startDate && !value) {
-    return helpers.error('any.invalid');
+    return helpers.error("any.invalid");
   }
 
   if (startDate && value && moment(startDate).isAfter(moment(value))) {
-    return helpers.error('any.invalid');
+    return helpers.error("any.invalid");
   }
 
   return value;
@@ -128,7 +129,7 @@ export const timeZoneValidator = (messageKey, key) =>
   Joi.string()
     .custom((value, helpers) => {
       if (!moment.tz.zone(value)) {
-        return helpers.error('any.invalid');
+        return helpers.error("any.invalid");
       }
       return value;
     })
@@ -141,10 +142,10 @@ export const utcTimeDateValidator = (messageKey, key) =>
   Joi.string()
     .custom((value, helpers) => {
       if (!moment.utc(value, moment.ISO_8601, true).isValid()) {
-        return helpers.error('any.invalid');
+        return helpers.error("any.invalid");
       }
-      if (!value.endsWith('Z')) {
-        return helpers.error('any.invalid');
+      if (!value.endsWith("Z")) {
+        return helpers.error("any.invalid");
       }
       return value;
     })
@@ -155,10 +156,10 @@ export const requiredUtcTimeDateValidator = (messageKey, key) =>
 
 export const requiredPermissionsValidator = (messageKey, key) =>
   Joi.object({
-    edit: requiredBooleanValidator(messageKey, 'edit'),
-    view: requiredBooleanValidator(messageKey, 'view'),
-    delete: requiredBooleanValidator(messageKey, 'delete'),
-    updateStatus: requiredBooleanValidator(messageKey, 'updateStatus'),
+    edit: requiredBooleanValidator(messageKey, "edit"),
+    view: requiredBooleanValidator(messageKey, "view"),
+    delete: requiredBooleanValidator(messageKey, "delete"),
+    updateStatus: requiredBooleanValidator(messageKey, "updateStatus"),
   })
     .required()
     .messages(JoiObjectError(messageKey, key));

@@ -1,13 +1,21 @@
-import { Container } from 'typedi';
-import { routes, featureLevel, get, put, patch, deleteMethod } from './utils';
-import { Right } from '../auth';
-import { TaskService, UserService } from '../services';
+import { Container } from "typedi";
+import {
+  routes,
+  featureLevel,
+  get,
+  put,
+  patch,
+  deleteMethod,
+  post,
+} from "./utils";
+import { Right } from "../auth";
+import { TaskService, UserService } from "../services";
 import {
   createTaskSchema,
   shareTaskSchema,
   updateTaskSchema,
   updateUserProfileSchema,
-} from '../models';
+} from "../models";
 
 export default () => {
   // Profile related
