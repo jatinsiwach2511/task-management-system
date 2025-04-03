@@ -29,17 +29,17 @@ export default class TaskService {
     return this.txs.withTransaction(async (client) => {
       const messageKey = "createTask";
       const serverError = new HttpException.ServerError(
-        formatErrorResponse(messageKey, "unableT oCreate")
+        formatErrorResponse(messageKey, "unableToCreate")
       );
-      if (
-        dto?.reminderType === "CUSTOM" &&
-        dto?.remindAt &&
-        !isReminderWithinDueTime(dto.remindAt, dto.dueDate)
-      ) {
-        throw new HttpException.BadRequest(
-          formatErrorResponse(messageKey, "reminderTimeExceeds")
-        );
-      }
+      // if (
+      //   dto?.reminderType === "CUSTOM" &&
+      //   dto?.remindAt &&
+      //   !isReminderWithinDueTime(dto.remindAt, dto.dueDate)
+      // ) {
+      //   throw new HttpException.BadRequest(
+      //     formatErrorResponse(messageKey, "reminderTimeExceeds")
+      //   );
+      // }
       try {
         const createTaskDto = TaskService.makeCreateTaskDto(dto, actionUser);
         const success = await this.dao.createTask(client, createTaskDto);
@@ -361,7 +361,8 @@ export default class TaskService {
         // To check due date is less than 1hr
         // createReminder: !isWithinTimeRange(dto.dueDate),
         createReminder: true,
-        type: isDueSoon ? undefined : dto.reminderType,
+        // type: isDueSoon ? undefined : dto.reminderType,
+        type: dto.reminderType,
         // reminder_time: isDueSoon ? undefined : dto.remindAt,
         // message: isDueSoon ? undefined : dto.reminderMessage,
         reminder_time: dto.remindAt,

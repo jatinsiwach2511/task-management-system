@@ -1,5 +1,5 @@
 import { QueryBuilder } from "./helper";
-import EmailService from "../services";
+import { EmailService } from "../services";
 
 class ReminderDao {
   reminderJoin = `
@@ -26,18 +26,22 @@ class ReminderDao {
         LIMIT 100`,
         ["PENDING"]
       ).build();
-      const res = client.query(sql, args);
+      const res = await client.query(sql, args);
+      if (!res.rows || res.rows.length === 0) {
+        await client.query("COMMIT");
+        return { processed: 0 };
+      }
+      await client.query("COMMIT");
       for (const reminder of res.rows) {
         try {
           await EmailService.sendMail({
-            to: reminder.email,
+            to: "jatinsiwach2501@gmail.com",
             subject: "Reminder notification",
             text: reminder.message,
           });
-
           await client.query(
             `UPDATE reminders 
-             SET status = 'SENT', sent_at = NOW() 
+             SET status = 'SENT'
              WHERE id = $1`,
             [reminder.rId]
           );
@@ -50,8 +54,6 @@ class ReminderDao {
           );
         }
       }
-
-      await client.query("COMMIT");
       return { processed: res.rows.length };
     } catch (error) {
       await client.query("ROLLBACK");
