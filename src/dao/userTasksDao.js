@@ -14,6 +14,7 @@ class userTasksDao {
       return res.rows;
     } catch (err) {
       console.error(`❌ Error: Task fetching failed! for the user ${err}`);
+      throw new Error(`Error: Task fetching failed! for the user ${err}`);
     }
   }
   async getAllTasks(client, userId) {
@@ -26,6 +27,7 @@ class userTasksDao {
       return res.rows;
     } catch (err) {
       console.error(`❌ Error: Task fetching failed! for the user ${err}`);
+      throw new Error(`Error: Task fetching failed! for the user ${err}`);
     }
   }
   async shareTask(client, shareTaskDto) {
@@ -44,6 +46,7 @@ class userTasksDao {
     } catch (err) {
       client.query("ROLLBACK");
       console.error(`❌ Error: Task fetching failed! for the user ${err}`);
+      throw new Error(`Error: Task fetching failed! for the user ${err}`);
     }
   }
 }

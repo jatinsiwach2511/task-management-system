@@ -89,6 +89,19 @@ const configLoader = convict({
     default: "",
     env: "ENCRYPTION_KEY",
   },
+  email: {
+    format: String,
+    default: "",
+    env: "EMAIL",
+    doc: "The email address used for sending emails from the system",
+  },
+  emailPass: {
+    format: String,
+    default: "",
+    env: "EMAIL_PASS",
+    sensitive: true,
+    doc: "The password for the email account",
+  },
 });
 
 configLoader.validate({ allowed: "strict" });
