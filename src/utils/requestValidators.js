@@ -1,5 +1,5 @@
 import Joi from "joi";
-import moment from "moment";
+import moment from "moment-timezone";
 import {
   joiStringError,
   joiNumberError,

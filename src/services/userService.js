@@ -104,6 +104,7 @@ class UserService {
       lastName: dto.lastName,
       email: dto.email,
       password: hash,
+      timeZone: dto.timeZone,
       status: STATUS.ACTIVE,
       createdBy,
     };
