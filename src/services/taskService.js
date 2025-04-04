@@ -10,6 +10,7 @@ import {
   messageResponse,
 } from "../utils";
 import { TaskDao } from "../dao";
+import { UserTasksDao } from "../dao";
 import UserService from "./userService";
 
 const permissionLevel = Object.freeze({
@@ -23,6 +24,7 @@ export default class TaskService {
   constructor() {
     this.txs = Container.get("DbTransactions");
     this.dao = Container.get(TaskDao);
+    this.UserTasksDao = Container.get(UserTasksDao);
     this.userService = Container.get(UserService);
   }
 
@@ -32,15 +34,15 @@ export default class TaskService {
       const serverError = new HttpException.ServerError(
         formatErrorResponse(messageKey, "unableToCreate")
       );
-      // if (
-      //   dto?.reminderType === "CUSTOM" &&
-      //   dto?.remindAt &&
-      //   !isReminderWithinDueTime(dto.remindAt, dto.dueDate)
-      // ) {
-      //   throw new HttpException.BadRequest(
-      //     formatErrorResponse(messageKey, "reminderTimeExceeds")
-      //   );
-      // }
+      if (
+        dto?.reminderType === "CUSTOM" &&
+        dto?.remindAt &&
+        !isReminderWithinDueTime(dto.remindAt, dto.dueDate)
+      ) {
+        throw new HttpException.BadRequest(
+          formatErrorResponse(messageKey, "reminderTimeExceeds")
+        );
+      }
       try {
         const createTaskDto = TaskService.makeCreateTaskDto(dto, actionUser);
         const success = await this.dao.createTask(client, createTaskDto);
@@ -56,16 +58,17 @@ export default class TaskService {
 
   async getAllTasks(filters, userId) {
     return this.txs.withTransaction(async (client) => {
-      const messageKey = 'getAllTasks';
-      const userTasks = await this.dao.getAllTasks(filters, userId);
+      const messageKey = "getAllTasks";
+      const userTasks = await this.UserTasksDao.getAllTasks(
+        client,
+        filters,
+        userId
+      );
       if (!userTasks)
         throw new HttpException.NotFound(
-          formatErrorResponse(messageKey, 'notFound')
+          formatErrorResponse(messageKey, "notFound")
         );
-      const timeZone = await this.userService.dao.getTimeZone(
-        client,
-        actionUser.id
-      );
+      const timeZone = await this.userService.dao.getTimeZone(client, userId);
       return TaskService.makeTaskResponse(userTasks, timeZone);
     });
   }
@@ -73,7 +76,11 @@ export default class TaskService {
   async getTaskById(id, actionUser) {
     return this.txs.withTransaction(async (client) => {
       const messageKey = "getTaskById";
-      const task = await this.dao.findTaskById(client, id, actionUser.id);
+      const task = await this.UserTasksDao.findTaskById(
+        client,
+        id,
+        actionUser.id
+      );
       if (!task) {
         throw new HttpException.NotFound(
           formatErrorResponse(messageKey, "notFound")
@@ -93,7 +100,11 @@ export default class TaskService {
       const serverError = new HttpException.ServerError(
         formatErrorResponse(messageKey, "unableToUpdate")
       );
-      const task = await this.dao.findTaskById(client, dto.id, actionUser.id);
+      const task = await this.UserTasksDao.findTaskById(
+        client,
+        dto.id,
+        actionUser.id
+      );
       if (!task) {
         throw new HttpException.NotFound(
           formatErrorResponse(messageKey, "notFound")
@@ -103,9 +114,12 @@ export default class TaskService {
         !(
           TaskService.hasTaskPermission(
             permissionLevel.EDIT,
-            task.permission
+            task.permission_level
           ) ||
-          TaskService.hasTaskPermission(permissionLevel.OWNER, task.permission)
+          TaskService.hasTaskPermission(
+            permissionLevel.OWNER,
+            task.permission_level
+          )
         )
       )
         throw new HttpException.Forbidden(
@@ -127,7 +141,11 @@ export default class TaskService {
   async updateTaskDueDate(dto, actionUser) {
     return this.txs.withTransaction(async (client) => {
       const messageKey = "updateTaskDueDate";
-      const task = await this.dao.findTaskById(client, dto.id, actionUser.id);
+      const task = await this.UserTasksDao.findTaskById(
+        client,
+        dto.id,
+        actionUser.id
+      );
       if (!task) {
         throw new HttpException.NotFound(
           formatErrorResponse(messageKey, "notFound")
@@ -174,14 +192,17 @@ export default class TaskService {
     });
   }
 
-
   async deleteTask(id, actionUser) {
     return this.txs.withTransaction(async (client) => {
-      const messageKey = 'deleteTask';
+      const messageKey = "deleteTask";
       const serverError = new HttpException.ServerError(
-        formatErrorResponse(messageKey, 'unableToDelte')
+        formatErrorResponse(messageKey, "unableToDelte")
       );
-      const task = await this.dao.findTaskById(client, id, actionUser.id);
+      const task = await this.UserTasksDao.findTaskById(
+        client,
+        id,
+        actionUser.id
+      );
       if (!task) {
         throw new HttpException.NotFound(
           formatErrorResponse(messageKey, "notFound")
@@ -191,19 +212,22 @@ export default class TaskService {
         !(
           TaskService.hasTaskPermission(
             permissionLevel.DELETE,
-            task.permission
+            task.permission_level
           ) ||
-          TaskService.hasTaskPermission(permissionLevel.OWNER, task.permission)
+          TaskService.hasTaskPermission(
+            permissionLevel.OWNER,
+            task.permission_level
+          )
         )
       )
         throw new HttpException.Forbidden(
-          formatErrorResponse(messageKey, 'permissionDenied')
+          formatErrorResponse(messageKey, "permissionDenied")
         );
       try {
         const success = await this.dao.deleteTask(client, id);
         if (!success) throw serverError;
         return messageResponse(
-          formatSuccessResponse(messageKey, 'deletedSuccessfully')
+          formatSuccessResponse(messageKey, "deletedSuccessfully")
         );
       } catch (err) {
         throw serverError;
@@ -213,7 +237,7 @@ export default class TaskService {
 
   async getTasksStatus(filters, userId) {
     return this.txs.withTransaction(async (client) => {
-      const messageKey = 'getTasksStatus';
+      const messageKey = "getTasksStatus";
       const userTasks = await this.dao.getAllTasks(filters, userId);
       if (!userTasks)
         throw new HttpException.NotFound(
@@ -230,9 +254,9 @@ export default class TaskService {
   // Incomplete
   async shareTask(dto, actionUser) {
     return this.txs.withTransaction(async (client) => {
-      const messageKey = 'shareTask';
+      const messageKey = "shareTask";
       const serverError = new HttpException.ServerError(
-        formatErrorResponse(messageKey, 'unableToShare')
+        formatErrorResponse(messageKey, "unableToShare")
       );
       const task = await this.dao.findTaskById(client, id, actionUser.id);
 
@@ -260,7 +284,7 @@ export default class TaskService {
         const success = await this.dao.shareTask(client, shareTaskDto);
         if (!success) throw serverError;
         return messageResponse(
-          formatSuccessResponse(messageKey, 'sharedSuccessfully')
+          formatSuccessResponse(messageKey, "sharedSuccessfully")
         );
       } catch (err) {
         throw serverError;
@@ -270,9 +294,9 @@ export default class TaskService {
 
   async updateShareTaskPermission(dto, actionUser) {
     return this.txs.withTransaction(async (client) => {
-      const messageKey = 'updateShareTaskPermission';
+      const messageKey = "updateShareTaskPermission";
       const serverError = new HttpException.ServerError(
-        formatErrorResponse(messageKey, 'unableToUpdate')
+        formatErrorResponse(messageKey, "unableToUpdate")
       );
       const task = await this.dao.findTaskById(client, dto.id, actionUser.id);
       if (!task) {
@@ -285,7 +309,7 @@ export default class TaskService {
         !TaskService.hasTaskPermission(permissionLevel.OWNER, task.permission)
       )
         throw new HttpException.Forbidden(
-          formatErrorResponse(messageKey, 'permissionDenied')
+          formatErrorResponse(messageKey, "permissionDenied")
         );
       try {
         const updateShareTaskPermissionDto =
@@ -304,9 +328,9 @@ export default class TaskService {
 
   async updateReminder(dto, actionUser) {
     return this.txs.withTransaction(async (client) => {
-      const messageKey = 'updateReminder';
+      const messageKey = "updateReminder";
       const serverError = new HttpException.ServerError(
-        formatErrorResponse(messageKey, 'unableToUpdate')
+        formatErrorResponse(messageKey, "unableToUpdate")
       );
       const reminder = await this.dao.findReminderById(
         client,
@@ -322,7 +346,7 @@ export default class TaskService {
       const dueDate = getDueDateByReminderId(dto.id);
       if (!isReminderWithinDueTime(dto.remindAt, dueDate))
         throw new HttpException.BadRequest(
-          formatErrorResponse(messageKey, 'reminderTimeExceeds')
+          formatErrorResponse(messageKey, "reminderTimeExceeds")
         );
 
       try {
@@ -336,7 +360,7 @@ export default class TaskService {
         );
         if (!success) throw serverError;
         return messageKey(
-          formatSuccessResponse(messageKey, 'updatedSuccessfully')
+          formatSuccessResponse(messageKey, "updatedSuccessfully")
         );
       } catch (err) {
         throw serverError;
@@ -346,9 +370,9 @@ export default class TaskService {
 
   async updateUserTask(dto, actionUser) {
     return this.txs.withTransaction(async (client) => {
-      const messageKey = 'updateUserTask';
+      const messageKey = "updateUserTask";
       const serverError = new HttpException.ServerError(
-        formatErrorResponse(messageKey, 'unableToUpdate')
+        formatErrorResponse(messageKey, "unableToUpdate")
       );
       const task = await this.dao.findTaskById(client, dto.id, actionUser.id);
       if (!task) {
@@ -368,7 +392,7 @@ export default class TaskService {
         );
         if (!success) throw serverError;
         return messageResponse(
-          formatSuccessResponse(messageKey, 'updatedSuccessfully')
+          formatSuccessResponse(messageKey, "updatedSuccessfully")
         );
       } catch (err) {
         throw serverError;
@@ -395,14 +419,14 @@ export default class TaskService {
         createReminder: !isDueSoon,
         type: !isDueSoon ? dto.reminderType : undefined,
         reminder_time: !isDueSoon
-          ? dto.reminderType === 'CUSTOM'
+          ? dto.reminderType === "CUSTOM"
             ? dto?.remindAt
             : getDefautReminderTime(dto.dueDate)
           : undefined,
         message: !isDueSoon
-          ? dto.reminderType === 'CUSTOM'
+          ? dto.reminderType === "CUSTOM"
             ? dto?.reminderMessage
-            : 'Your task is pending'
+            : "Your task is pending"
           : undefined,
       },
     };
@@ -415,6 +439,7 @@ export default class TaskService {
       priority: dto.priority,
       status: dto.status,
       updated_by: actionUser.id,
+      id: dto.id,
     };
   }
 
@@ -464,9 +489,9 @@ export default class TaskService {
     return {
       id: dto.id,
       type: dto.type,
-      remindAt: dto.type === 'CUSTOM' ? dto?.remindAt : getDefautReminderTime(),
+      remindAt: dto.type === "CUSTOM" ? dto?.remindAt : getDefautReminderTime(),
       message:
-        dto.type === 'CUSTOM' ? dto?.reminderMessage : 'Your task is pending',
+        dto.type === "CUSTOM" ? dto?.reminderMessage : "Your task is pending",
       updated_by: actionUser.id,
     };
   }

@@ -1,11 +1,11 @@
 class Filter {
   static types = Object.freeze({
-    TASKS: ['status', 'priority', 'title', 'due_in'],
+    TASKS: ["status", "priority", "title", "due_in"],
   });
 
   static getAllowedFilter(type) {
     switch (type) {
-      case 'TASKS':
+      case "TASKS":
         return Object.freeze(Filter.types.TASKS);
       default:
         return Object.freeze([]);
@@ -13,7 +13,7 @@ class Filter {
   }
 
   static normalizeValue(key, value) {
-    if (['status', 'priority'].includes(key)) {
+    if (["status", "priority"].includes(key)) {
       if (Array.isArray(value)) {
         return value.map((v) => v.toUpperCase());
       }
@@ -40,7 +40,7 @@ class Filter {
     params.order && (filter.order = params.order);
     params.direction && (filter.direction = params.direction);
     params.allResults &&
-      (filter.allResults = params.allResults.toLowerCase() === 'true');
+      (filter.allResults = params.allResults.toLowerCase() === "true");
 
     if (isExport) filter.allResults = true;
 
