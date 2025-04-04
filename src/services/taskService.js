@@ -154,6 +154,7 @@ export default class TaskService {
         dto.id,
         actionUser.id
       );
+      console.log("===task", task);
       if (!task) {
         throw new HttpException.NotFound(
           formatErrorResponse(messageKey, "notFound")
@@ -179,14 +180,17 @@ export default class TaskService {
           dto,
           actionUser
         );
-        await this.dao.updateTaskDueDate(client, updateTaskDueDateDto);
+        const res = await this.dao.updateTask(client, updateTaskDueDateDto);
 
         // if(updatedDueDate<1hr) delete all reminders of all users
         // if(reminders not existed before) create to all users
         // if(exists) update all and set default
-        const reminders = await this.dao.getAllRemindersByTaskId(dto.id);
+        const reminders = await this.dao.getAllRemindersByTaskId(
+          client,
+          dto.id
+        );
         if (isDueInLessThanTimeRange(dto.dueDate)) {
-          await this.dao.deleteRemindersInBatch(dto.id);
+          await this.dao.deleteRemindersInBatch(client, reminders);
         } else if (!reminders || reminders.length === 0) {
           await this.dao.createRemindersInBatch(dto.id);
         } else {

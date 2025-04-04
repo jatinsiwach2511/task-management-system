@@ -1,7 +1,9 @@
-import { Queries, Mapper } from "./helper";
+import { Queries, Mapper, QueryBuilder } from "./helper";
 import { taskUpdateMap } from "../models";
 
 class taskDao {
+  reminderUserTaskQuery = `SELECT r.id FROM reminders r LEFT JOIN usertasks ut ON ut.id=r.usertaskid`;
+
   async createTask(client, createTaskDto) {
     try {
       await client.query("BEGIN");
@@ -44,6 +46,7 @@ class taskDao {
     }
   }
   async updateTask(client, updateTaskDto) {
+    console.log("===updatetaskdto", updateTaskDto);
     try {
       const { sql: sql, args: args } = await Queries.updaterFor(
         "tasks",
@@ -66,6 +69,31 @@ class taskDao {
     } catch (err) {
       console.error(`❌ Error: Task deletion failed! ${err}`);
       throw new Error(`Error: Task deletion failed! ${err}`);
+    }
+  }
+  async getAllRemindersByTaskId(client, taskId) {
+    try {
+      const qb = new QueryBuilder(
+        `${this.reminderUserTaskQuery} WHERE ut.taskid = ?`,
+        [taskId]
+      );
+      const { sql, args } = qb.build();
+      const res = await client.query(sql, args);
+      return res.rows;
+    } catch (err) {
+      console.error(`❌ Error: Reminder fetching failed  ${err}`);
+      throw new Error(`Error:  Reminder fetching failed  ${err}`);
+    }
+  }
+  async deleteRemindersInBatch(client, reminders) {
+    console.log("====reminders", reminders);
+    try {
+      const res = await client.query(`DELETE FROM Reminders WHERE id IN ($1)`, [
+        reminders,
+      ]);
+    } catch (err) {
+      console.error(`❌ Error: Reminder deletion failed  ${err}`);
+      throw new Error(`Error:  Reminder deletion failed  ${err}`);
     }
   }
 }
