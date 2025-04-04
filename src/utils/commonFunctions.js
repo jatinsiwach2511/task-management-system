@@ -133,7 +133,14 @@ export const getDefautReminderTime = (dateTime) => {
 
 export const isReminderWithinDueTime = (remindAt, dueDate) => {
   if (isUndefined(remindAt) || isUndefined(dueDate)) return undefined;
-  const remindMoment = moment.utc(remindAt); 
-  const dueMoment = moment.utc(dueDate); 
+  const remindMoment = moment.utc(remindAt);
+  const dueMoment = moment.utc(dueDate);
   return remindMoment.isBefore(dueMoment);
+};
+
+export const isOverdue = (dueDate) => {
+  if (isUndefined(dueDate)) return undefined;
+  const nowUtc = moment.utc();
+  const dueUtc = moment.utc(dueDate);
+  return dueUtc.isBefore(nowUtc);
 };
