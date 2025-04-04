@@ -1,5 +1,4 @@
-import { Queries } from "./helper";
-import { Mapper } from "./helper";
+import { Queries, Mapper } from "./helper";
 import { taskUpdateMap } from "../models";
 
 class taskDao {
@@ -25,7 +24,6 @@ class taskDao {
       const res2 = await client.query(sql2, args2);
       const usertaskid = Mapper.getId(res2);
       if (createTaskDto.reminder.createReminder) {
-        console.log("=====reminderobj", createTaskDto.reminder);
         const { createReminder, ...reminderDto } = createTaskDto.reminder;
         const reminderobj = {
           ...reminderDto,
@@ -38,6 +36,7 @@ class taskDao {
         const res3 = await client.query(sql3, args3);
       }
       await client.query("COMMIT");
+      return true;
     } catch (err) {
       await client.query("ROLLBACK");
       console.error(`❌ Error: Task creation failed! ${err}`);
