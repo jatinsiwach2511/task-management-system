@@ -14,7 +14,7 @@ class ReminderScheduler {
     try {
       await this.setupCronJob();
       this.setupShutdownHandlers();
-      console.log("✅ Reminder scheduler started");
+      console.log("✌️ Reminder scheduler started");
       return this;
     } catch (err) {
       console.error("❌ Failed to start reminder scheduler:", err);
