@@ -1,7 +1,5 @@
 import Joi from 'joi';
-import {
-  requiredUtcTimeDateValidator,
-} from '../../../utils';
+import { requiredUtcTimeDateValidator } from '../../../utils';
 
 export default Joi.object(
   ((messageKey) => ({

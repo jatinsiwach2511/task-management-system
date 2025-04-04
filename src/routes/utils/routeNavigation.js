@@ -18,7 +18,7 @@ export default Object.freeze({
   },
   /* Add more routes here */
   task: {
-    GET_TASKS: `${API_ROOT_V1}/tasks/filter`,
+    GET_ALL_TASKS: `${API_ROOT_V1}/tasks/filter`,
     GET_TASK_BY_ID: `${TASK_ROOT}/:id`,
     CREATE_TASK: `${TASK_ROOT}`,
     UPDATE_TASK: `${TASK_ROOT}/:id`,
@@ -28,5 +28,6 @@ export default Object.freeze({
     UPDATE_REMINDER: `${TASK_ROOT}/reminder/:id`,
     UPDATE_SHARE_TASK_PERMISSION: `${API_ROOT_V1}/share-task/:id`,
     UPDATE_TASK_DUE_DATE: `${TASK_ROOT}/due-date/:id`,
+    UPDATE_USER_TASK: `${TASK_ROOT}/user-task/:id`,
   },
 });

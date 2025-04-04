@@ -1,4 +1,4 @@
-import { Container } from "typedi";
+import { Container } from 'typedi';
 import {
   routes,
   featureLevel,
@@ -7,16 +7,20 @@ import {
   patch,
   deleteMethod,
   post,
-} from "./utils";
-import { Right } from "../auth";
-import { TaskService, UserService } from "../services";
+} from './utils';
+import { Right } from '../auth';
+import { TaskService, UserService } from '../services';
 import {
   createTaskSchema,
   shareTaskSchema,
   updateTaskSchema,
   updateUserProfileSchema,
-} from "../models";
-import updateTaskDueDateSchema from "../models/schemas/task/updateTaskDueDateSchema";
+  updateTaskDueDateSchema,
+  updateReminderSchema,
+  updateUserTaskSchema,
+  Filter,
+  updateShareTaskPermissionSchema,
+} from '../models';
 
 export default () => {
   // Profile related
@@ -56,11 +60,12 @@ export default () => {
   // With filter
   get(
     featureLevel.production,
-    Right.user.GET_TASKS,
-    routes.task.GET_TASKS,
+    Right.user.GET_ALL_TASKS,
+    routes.task.GET_ALL_TASKS,
     async (req) => {
       const service = Container.get(TaskService);
-      return await service.getTasks();
+      const filters = Filter.fromRequest(req, 'TASKS');
+      return await service.getAllTasks(filters, req.currentUser.id);
     }
   );
 
@@ -104,7 +109,8 @@ export default () => {
     routes.task.GET_TASKS_STATUS,
     async (req) => {
       const service = Container.get(TaskService);
-      return await service.getTasksStatus(req.currentUser.id);
+      const filters = Filter.fromRequest(req, 'TASKS');
+      return await service.getTasksStatus(filters, req.currentUser.id);
     }
   );
 
@@ -127,7 +133,7 @@ export default () => {
     async (req) => {
       const service = Container.get(TaskService);
       const { id } = req.params;
-      const dto = await shareTaskSchema.validateAsync(req.body);
+      const dto = await updateShareTaskPermissionSchema.validateAsync(req.body);
       return await service.updateShareTaskPermission(
         { id, ...dto },
         { ...req.currentUser }
@@ -152,8 +158,8 @@ export default () => {
 
   patch(
     featureLevel.production,
-    Right.user.UPDATE_REMINDER,
-    routes.task.UPDATE_REMINDER,
+    Right.user.UPDATE_USER_TASK,
+    routes.task.UPDATE_USER_TASK,
     async (req) => {
       const service = Container.get(TaskService);
       const { id } = req.params;

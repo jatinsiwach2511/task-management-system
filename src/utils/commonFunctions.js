@@ -117,9 +117,23 @@ export const convertIsoToLocalDateTime = (utcDateTime, timeZone) => {
   return moment(utcDateTime).tz(timeZone).format('YYYY-MM-DD HH:mm:ssZ');
 };
 
-export const isWithinTimeRange = (dateTime) => {
+export const isDueInLessThanTimeRange = (dateTime) => {
   if (isUndefined(dateTime)) return undefined;
-  const givenTime = moment(dateTime);
-  const oneHourBefore = givenTime.clone().subtract(1, 'hour');
-  return moment().isSameOrAfter(oneHourBefore);
+  const nowUtc = moment.utc();
+  const dueMoment = moment.utc(dateTime);
+  const diffInMinutes = dueMoment.diff(nowUtc, 'minutes');
+  return diffInMinutes > 0 && diffInMinutes < 60;
+};
+
+export const getDefautReminderTime = (dateTime) => {
+  if (isUndefined(dateTime)) return undefined;
+  const dueMoment = moment.utc(dateTime);
+  return dueMoment.subtract(59, 'minutes').format('YYYY-MM-DD HH:mm:ssZ');
+};
+
+export const isReminderWithinDueTime = (remindAt, dueDate) => {
+  if (isUndefined(remindAt) || isUndefined(dueDate)) return undefined;
+  const remindMoment = moment.utc(remindAt); 
+  const dueMoment = moment.utc(dueDate); 
+  return remindMoment.isBefore(dueMoment);
 };

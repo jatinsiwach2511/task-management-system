@@ -1,12 +1,17 @@
 import Joi from 'joi';
 import {
-  requiredEmailValidator,
-  requiredPermissionsValidator,
+  PERMISSION_LEVEL,
+  requiredEnumValidator,
+  requiredIdValidator,
 } from '../../../utils';
 
 export default Joi.object(
   ((messageKey) => ({
-    email: requiredEmailValidator(messageKey, 'email'),
-    permissions: requiredPermissionsValidator(messageKey, 'permissions'),
-  }))('shareTask')
+    userId: requiredIdValidator(messageKey, 'userId'),
+    permissionLevel: requiredEnumValidator(
+      PERMISSION_LEVEL,
+      messageKey,
+      'permissionLevel'
+    ),
+  }))('updateShareTaskPermission')
 ).options({ stripUnknown: true });
