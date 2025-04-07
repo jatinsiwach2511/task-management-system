@@ -29,6 +29,7 @@ CREATE TABLE user_details (
   user_id BIGINT NOT NULL REFERENCES users ON UPDATE CASCADE ON DELETE CASCADE,
   first_name VARCHAR(70) NOT NULL,
   last_name VARCHAR(70) NOT NULL,
+  timezone VARCHAR(50) DEFAULT 'Australia/Melbourne',
   reserve1 VARCHAR(1), -- reserved column	
   reserve2 VARCHAR(1), -- reserved column	
   reserve3 VARCHAR(1), -- reserved column	

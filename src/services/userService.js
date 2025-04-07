@@ -1,55 +1,64 @@
-import { Container } from 'typedi';
-import { UserDao } from '../dao';
-import {
-  HttpException, STATUS, formatErrorResponse,
-} from '../utils';
+import { Container } from "typedi";
+import { UserDao } from "../dao";
+import { HttpException, STATUS, formatErrorResponse } from "../utils";
 
-import { Password } from '../models';
+import { Password } from "../models";
 
 class UserService {
   constructor() {
-    this.txs = Container.get('DbTransactions');
+    this.txs = Container.get("DbTransactions");
     this.dao = Container.get(UserDao);
   }
 
   async createUser(client, dto, createdBy) {
-    const messageKey = 'createUser';
+    const messageKey = "createUser";
     if (await this.dao.findDuplicate(client, dto)) {
-      throw new HttpException.Conflict(formatErrorResponse(messageKey, 'duplicateUser'));
+      throw new HttpException.Conflict(
+        formatErrorResponse(messageKey, "duplicateUser")
+      );
     }
 
     try {
       const createUserDto = await UserService.createUserDto(dto, createdBy);
       const id = await this.dao.createUser(client, createUserDto);
       await this.dao.attachRole(client, id, dto.role);
-      const user = this.findUserById(client, id);
+      const user = await this.findUserById(client, id);
       return user;
     } catch (err) {
       console.log(err);
-      throw new HttpException.BadRequest(formatErrorResponse(messageKey, 'unableToCreate'));
+      throw new HttpException.BadRequest(
+        formatErrorResponse(messageKey, "unableToCreate")
+      );
     }
   }
 
   async updateUser(client, dto, updatedBy) {
-    const messageKey = 'updateUser';
+    const messageKey = "updateUser";
     try {
       const updateUserDto = UserService.updateUserDto(dto, updatedBy);
       const success = await this.dao.updateUser(client, updateUserDto);
-      if (!success) throw new HttpException.NotFound(formatErrorResponse(messageKey, 'unableToUpdate'));
+      if (!success)
+        throw new HttpException.NotFound(
+          formatErrorResponse(messageKey, "unableToUpdate")
+        );
     } catch (err) {
       console.log(err);
-      throw new HttpException.NotFound(formatErrorResponse(messageKey, 'unableToUpdate'));
+      throw new HttpException.NotFound(
+        formatErrorResponse(messageKey, "unableToUpdate")
+      );
     }
     return await this.findUserById(client, dto.id);
   }
 
   async markUserLogin(client, userId) {
-    const messageKey = 'markUserLogin';
+    const messageKey = "markUserLogin";
     try {
       await this.dao.markUserLogin(client, userId);
     } catch (error) {
       console.log(error);
-      throw new HttpException.ServerError(formatErrorResponse(messageKey, 'unableToMark'));
+      throw new HttpException.ServerError(
+        formatErrorResponse(messageKey, "unableToMark")
+      );
     }
   }
 
@@ -72,13 +81,12 @@ class UserService {
       const user = await this.findUserById(client, id);
       if (!user) {
         throw new HttpException.NotFound(
-          formatErrorResponse('fetchUser', 'notFound'),
+          formatErrorResponse("fetchUser", "notFound")
         );
       }
       return user;
     });
   }
-
 
   async fetchUserProfile(actionUser) {
     return UserService.fromUserProfile(actionUser);
@@ -86,10 +94,14 @@ class UserService {
 
   async modifyUserProfile(updateDto, actionUser) {
     return this.txs.withTransaction(async (client) => {
-      const user = await this.updateUser(client, {
-        ...updateDto,
-        id: actionUser.id,
-      }, actionUser.id);
+      const user = await this.updateUser(
+        client,
+        {
+          ...updateDto,
+          id: actionUser.id,
+        },
+        actionUser.id
+      );
       return UserService.fromUserProfile(user);
     });
   }
@@ -104,6 +116,7 @@ class UserService {
       lastName: dto.lastName,
       email: dto.email,
       password: hash,
+      timeZone: dto.timeZone,
       status: STATUS.ACTIVE,
       createdBy,
     };
@@ -142,6 +155,5 @@ class UserService {
     };
   }
 }
-
 
 export default UserService;
