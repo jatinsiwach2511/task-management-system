@@ -46,9 +46,8 @@ class taskDao {
     }
   }
   async updateTask(client, updateTaskDto) {
-    console.log("===updatetaskdto", updateTaskDto);
     try {
-      const { sql: sql, args: args } = await Queries.updaterFor(
+      const { sql: sql, args: args } = Queries.updaterFor(
         "tasks",
         taskUpdateMap,
         updateTaskDto
