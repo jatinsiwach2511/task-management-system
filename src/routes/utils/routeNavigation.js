@@ -1,6 +1,7 @@
-const API_ROOT_V1 = "/api/v1";
+const API_ROOT_V1 = '/api/v1';
 const USER_ROOT = `${API_ROOT_V1}/user`;
 const TASK_ROOT = `${API_ROOT_V1}/task`;
+const MFA_ROOT = `${API_ROOT_V1}/mfa`;
 
 export default Object.freeze({
   ping: `${API_ROOT_V1}/ping`,
@@ -11,13 +12,13 @@ export default Object.freeze({
     SOCIAL_LOGIN: `${API_ROOT_V1}/social-login`,
   },
   mfa: {
-    INIT_MFA: `${USER_ROOT}/mfa/init`,
-    VALIDATE_EMAIL: `${USER_ROOT}/mfa/validate-email`,
-    VERIFY_USER_EMAIL: `${USER_ROOT}/mfa/verify-email`,
-    VALIDATE_PHONE: `${USER_ROOT}/mfa/validate-phone`,
-    VERIFY_USER_PHONE: `${USER_ROOT}/mfa/verify-phone`,
-    VALIDATE_TOTP: `${USER_ROOT}/mfa/validate-totp`,
-    VERIFY_USER_TOTP: `${USER_ROOT}/mfa/verify-totp`,
+    SETUP_MFA: `${MFA_ROOT}/setup`,
+    VALIDATE_EMAIL: `${MFA_ROOT}/validate-email`,
+    VERIFY_USER_EMAIL: `${MFA_ROOT}/verify-email`,
+    VALIDATE_PHONE: `${MFA_ROOT}/validate-phone`,
+    VERIFY_USER_PHONE: `${MFA_ROOT}/verify-phone`,
+    VALIDATE_TOTP: `${MFA_ROOT}/validate-totp`,
+    VERIFY_USER_TOTP: `${MFA_ROOT}/verify-totp`,
   },
   user: {
     PROFILE: `${USER_ROOT}/profile`,

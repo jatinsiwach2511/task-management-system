@@ -153,6 +153,7 @@ class SecurityService {
       algorithm: config.authTokens.algorithm,
     });
   }
+  
   static createTempToken(ipAddress, email, aud, firstLogin) {
     const payload = {
       exp: SecurityService.expiryTimeStamp(
