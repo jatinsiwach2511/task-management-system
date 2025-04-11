@@ -1,5 +1,5 @@
-import Joi from 'joi';
-import moment from 'moment-timezone';
+import Joi, { options } from "joi";
+import moment from "moment-timezone";
 import {
   joiStringError,
   joiNumberError,
@@ -7,7 +7,7 @@ import {
   joiEmailError,
   joiDateError,
   JoiObjectError,
-} from './apiResponses';
+} from "./apiResponses";
 
 export const idValidator = () => Joi.number().integer().positive();
 
@@ -37,7 +37,7 @@ export const nullableStringValidator = (messageKey, key) =>
 export const dateValidator = ({ onlyPast } = {}) => {
   let validator = Joi.date().iso().raw();
   if (onlyPast) {
-    validator = validator.max('now');
+    validator = validator.max("now");
   }
   return validator;
 };
@@ -60,11 +60,11 @@ export const validateEndDate = (startDateKey) => (value, helpers) => {
   }
 
   if (startDate && !value) {
-    return helpers.error('any.invalid');
+    return helpers.error("any.invalid");
   }
 
   if (startDate && value && moment(startDate).isAfter(moment(value))) {
-    return helpers.error('any.invalid');
+    return helpers.error("any.invalid");
   }
 
   return value;
@@ -105,6 +105,11 @@ export const nullableEnumValidator = (options = [], messageKey, key) =>
     .allow(null)
     .messages(joiStringError(messageKey, key));
 
+export const requiredEnumArrayValidator = (options = [], messageKey, key) =>
+  Joi.array()
+    .items(Joi.string().valid(...options))
+    .required();
+
 export const enumValidator = (options = [], messageKey, key) =>
   Joi.string()
     .valid(...options)
@@ -129,7 +134,7 @@ export const timeZoneValidator = (messageKey, key) =>
   Joi.string()
     .custom((value, helpers) => {
       if (!moment.tz.zone(value)) {
-        return helpers.error('any.invalid');
+        return helpers.error("any.invalid");
       }
       return value;
     })
@@ -142,10 +147,10 @@ export const utcTimeDateValidator = (messageKey, key) =>
   Joi.string()
     .custom((value, helpers) => {
       if (!moment.utc(value, moment.ISO_8601, true).isValid()) {
-        return helpers.error('any.invalid');
+        return helpers.error("any.invalid");
       }
-      if (!value.endsWith('Z')) {
-        return helpers.error('any.invalid');
+      if (!value.endsWith("Z")) {
+        return helpers.error("any.invalid");
       }
       return value;
     })

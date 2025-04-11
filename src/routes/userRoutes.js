@@ -1,4 +1,4 @@
-import { Container } from 'typedi';
+import { Container } from "typedi";
 import {
   routes,
   featureLevel,
@@ -7,9 +7,9 @@ import {
   patch,
   deleteMethod,
   post,
-} from './utils';
-import { Right } from '../auth';
-import { TaskService, UserService } from '../services';
+} from "./utils";
+import { Right } from "../auth";
+import { TaskService, UserService } from "../services";
 import {
   createTaskSchema,
   shareTaskSchema,
@@ -20,7 +20,7 @@ import {
   updateUserTaskSchema,
   Filter,
   updateShareTaskPermissionSchema,
-} from '../models';
+} from "../models";
 
 export default () => {
   // Profile related
@@ -64,7 +64,7 @@ export default () => {
     routes.task.GET_ALL_TASKS,
     async (req) => {
       const service = Container.get(TaskService);
-      const filters = Filter.fromRequest(req, 'TASKS');
+      const filters = Filter.fromRequest(req, "TASKS");
       return await service.getAllTasks(filters, req.currentUser.id);
     }
   );
@@ -109,7 +109,7 @@ export default () => {
     routes.task.GET_TASKS_STATUS,
     async (req) => {
       const service = Container.get(TaskService);
-      const filters = Filter.fromRequest(req, 'TASKS');
+      const filters = Filter.fromRequest(req, "TASKS");
       return await service.getTasksStatus(filters, req.currentUser.id);
     }
   );

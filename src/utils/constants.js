@@ -1,23 +1,30 @@
 export const STATUS = Object.freeze({
-  ACTIVE: 'ACTIVE',
-  INACTIVE: 'INACTIVE',
+  ACTIVE: "ACTIVE",
+  INACTIVE: "INACTIVE",
 });
 
-export const PRIORITY_STATUS = Object.freeze(['HIGH', 'MEDIUM', 'LOW']);
+export const PRIORITY_STATUS = Object.freeze(["HIGH", "MEDIUM", "LOW"]);
 
 export const TASK_STATUS = Object.freeze([
-  'PENDING',
-  'COMPLETED',
-  'INPROGRESS',
+  "PENDING",
+  "COMPLETED",
+  "INPROGRESS",
 ]);
 
-export const REMINDER_STATUS = Object.freeze(['PENDING', 'SENT', 'FAILED']);
+export const REMINDER_STATUS = Object.freeze(["PENDING", "SENT", "FAILED"]);
 
-export const REMINDER_TYPE = Object.freeze(['CUSTOM', 'DEFAULT']);
+export const REMINDER_TYPE = Object.freeze(["CUSTOM", "DEFAULT"]);
 
 export const PERMISSION_LEVEL = Object.freeze([
-  'VIEW',
-  'EDIT',
-  'DELETE',
-  'OWNER',
+  "VIEW",
+  "EDIT",
+  "DELETE",
+  "OWNER",
 ]);
+
+export const MFA_METHODS = Object.freeze(["email", "phone", "totp"]);
+
+export const VERIFICATION_PURPOSE = Object.freeze({
+  MFASETUP: "MFASETUP",
+  LOGIN: "LOGIN",
+});

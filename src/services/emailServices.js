@@ -11,12 +11,12 @@ class EmailService {
   });
 
   static getTransporter() {
-    return this.transporter;
+    return EmailService.transporter;
   }
 
-  static async sendMail(mailOptions) {
+  async sendMail(mailOptions) {
     try {
-      const info = await this.transporter.sendMail(mailOptions);
+      const info = await EmailService.transporter.sendMail(mailOptions);
       return info;
     } catch (error) {
       throw error;
@@ -24,4 +24,4 @@ class EmailService {
   }
 }
 
-module.exports = EmailService;
+export default EmailService;

@@ -17,6 +17,8 @@ class SecurityService {
 
   static SAME_IP_TOKEN_EXPIRATION_MINUTES = 60;
 
+  static TEMP_TOKEN_EXPIRATION_MINUTES = 5;
+
   static MAX_LOGIN_ATTEMPTS = 3;
 
   static ACCOUNT_BLOCK_HOURS = 1;
@@ -125,7 +127,9 @@ class SecurityService {
 
   static createToken(ipAddress, email, aud, firstLogin) {
     const payload = {
-      exp: SecurityService.anyIpAddressExpiryTimestamp(),
+      exp: SecurityService.expiryTimeStamp(
+        SecurityService.TOKEN_EXPIRATION_MINUTES
+      ),
       iat: SecurityService.currentTimestamp(),
       nbf: SecurityService.currentTimestamp(),
       iss: config.authTokens.issuer,
@@ -134,7 +138,37 @@ class SecurityService {
       version: config.authTokens.version,
       exp2: {
         ip: ipAddress,
-        time: SecurityService.sameIpAddressExpiryTimestamp(),
+        time: SecurityService.expiryTimeStamp(
+          SecurityService.SAME_IP_TOKEN_EXPIRATION_MINUTES
+        ),
+      },
+      firstLogin: firstLogin || undefined,
+    };
+    if (aud && aud === config.authTokens.audience.app) {
+      payload.aud = config.authTokens.audience.app;
+      delete payload.exp;
+      delete payload.exp2;
+    }
+    return jwt.sign(payload, config.authTokens.privateKey, {
+      algorithm: config.authTokens.algorithm,
+    });
+  }
+  static createTempToken(ipAddress, email, aud, firstLogin) {
+    const payload = {
+      exp: SecurityService.expiryTimeStamp(
+        SecurityService.TEMP_TOKEN_EXPIRATION_MINUTES
+      ),
+      iat: SecurityService.currentTimestamp(),
+      nbf: SecurityService.currentTimestamp(),
+      iss: config.authTokens.issuer,
+      sub: encrypt(email),
+      aud: config.authTokens.audience.web,
+      version: config.authTokens.version,
+      exp2: {
+        ip: ipAddress,
+        time: SecurityService.expiryTimeStamp(
+          SecurityService.SAME_IP_TOKEN_EXPIRATION_MINUTES
+        ),
       },
       firstLogin: firstLogin || undefined,
     };
@@ -152,16 +186,8 @@ class SecurityService {
     return moment.utc().unix();
   }
 
-  static anyIpAddressExpiryTimestamp() {
-    return moment()
-      .add(SecurityService.TOKEN_EXPIRATION_MINUTES, "minute")
-      .unix();
-  }
-
-  static sameIpAddressExpiryTimestamp() {
-    return moment()
-      .add(SecurityService.SAME_IP_TOKEN_EXPIRATION_MINUTES, "minute")
-      .unix();
+  static expiryTimeStamp(time) {
+    return moment().add(time, "minute").unix();
   }
 
   async validateToken(ip, payload) {

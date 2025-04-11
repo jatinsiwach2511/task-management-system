@@ -1,8 +1,9 @@
-import { route } from './utils';
-import pingRoutes from './pingRoutes';
-import securityRoutes from './securityRoutes';
-import userRoutes from './userRoutes';
-import testApiRoutes from './testRoutes';
+import { route } from "./utils";
+import pingRoutes from "./pingRoutes";
+import securityRoutes from "./securityRoutes";
+import userRoutes from "./userRoutes";
+import testApiRoutes from "./testRoutes";
+import mfaRoutes from "./mfaRoutes";
 
 /* Add more imports here */
 
@@ -12,6 +13,7 @@ export default () => {
   securityRoutes();
   userRoutes();
   testApiRoutes();
+  mfaRoutes();
   /* Add more routes export here */
   return route;
 };

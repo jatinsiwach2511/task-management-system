@@ -1,2 +1,1 @@
-
-export {default as updateUserProfileSchema} from './updateUserProfileSchema';
+export { default as updateUserProfileSchema } from "./updateUserProfileSchema";

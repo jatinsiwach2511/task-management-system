@@ -1,14 +1,13 @@
 /* eslint-disable no-use-before-define */
-import { Router } from 'express';
-import HttpMethod from './httpMethod';
-import { HttpException, formatErrorResponse } from '../../utils';
-import { isApplicableFeatureLevel } from './featureLevel';
-import { verifyToken } from '../middlewares';
-import { Authentication } from '../../auth';
-import { SecurityService } from '../../services';
+import { Router } from "express";
+import HttpMethod from "./httpMethod";
+import { HttpException, formatErrorResponse } from "../../utils";
+import { isApplicableFeatureLevel } from "./featureLevel";
+import { verifyToken } from "../middlewares";
+import { Authentication } from "../../auth";
+import { SecurityService } from "../../services";
 
 export const route = Router();
-
 
 /**
  * Map the PUBLIC UNAUTHENTICATED route for HTTP GET requests
@@ -131,7 +130,6 @@ export const options = (level, right, path, callback, middlewares) => {
   initRouteWith(level, right, path, HttpMethod.options, callback, middlewares);
 };
 
-
 const initPublicRoute = (level, path, method, callback, middlewares = []) => {
   if (isApplicableFeatureLevel(level)) {
     logInitialization(path, method);
@@ -141,7 +139,9 @@ const initPublicRoute = (level, path, method, callback, middlewares = []) => {
         if (data) {
           return res.json(data).status(200);
         }
-        throw new HttpException.BadRequest(formatErrorResponse('general', 'noDataFound'));
+        throw new HttpException.BadRequest(
+          formatErrorResponse("general", "noDataFound")
+        );
       } catch (err) {
         return next(err);
       }
@@ -149,30 +149,51 @@ const initPublicRoute = (level, path, method, callback, middlewares = []) => {
   }
 };
 
-const initRouteWith = (level, right, path, method, callback, middlewares = []) => {
+const initRouteWith = (
+  level,
+  right,
+  path,
+  method,
+  callback,
+  middlewares = []
+) => {
   if (isApplicableFeatureLevel(level)) {
     logInitialization(path, method);
-    route[method](path, [verifyToken, ...middlewares], async (req, res, next) => {
-      try {
-        const { currentUser } = req;
-        if (!(currentUser
-                && Authentication.hasPermission(req.currentUser.rights || [], right))) {
-          throw new HttpException.Forbidden(formatErrorResponse('authToken', 'notAuthorised'));
-        }
-        const data = await callback(req, res, next);
-        if (data) {
-          const updatedToken = SecurityService.updateToken(
-            req.ip, currentUser.email,
-            currentUser.tokenAud, currentUser.tokenType,
+    route[method](
+      path,
+      [verifyToken, ...middlewares],
+      async (req, res, next) => {
+        try {
+          const { currentUser } = req;
+          if (
+            !(
+              currentUser &&
+              Authentication.hasPermission(req.currentUser.rights || [], right)
+            )
+          ) {
+            throw new HttpException.Forbidden(
+              formatErrorResponse("authToken", "notAuthorised")
+            );
+          }
+          const data = await callback(req, res, next);
+          if (data) {
+            const updatedToken = SecurityService.updateToken(
+              req.ip,
+              currentUser.email,
+              currentUser.tokenAud,
+              currentUser.tokenType
+            );
+            res.setHeader("Authorization", `Bearer ${updatedToken}`);
+            return res.json(data).status(200);
+          }
+          throw new HttpException.BadRequest(
+            formatErrorResponse("general", "noDataFound")
           );
-          res.setHeader('Authorization', `Bearer ${updatedToken}`);
-          return res.json(data).status(200);
+        } catch (err) {
+          return next(err);
         }
-        throw new HttpException.BadRequest(formatErrorResponse('general', 'noDataFound'));
-      } catch (err) {
-        return next(err);
       }
-    });
+    );
   }
 };
 

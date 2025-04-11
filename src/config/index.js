@@ -61,6 +61,16 @@ const configLoader = convict({
       default: "",
       env: "JWT_PUBLIC_KEY",
     },
+    tempPrivateKey: {
+      format: "*",
+      default: "",
+      env: "JWT_TEMP_PRIVATE_KEY",
+    },
+    tempPublicKey: {
+      format: "*",
+      default: "",
+      env: "JWT_TEMP_PUBLIC_KEY",
+    },
     issuer: {
       format: String,
       default: "[project_name]",
@@ -101,6 +111,28 @@ const configLoader = convict({
     env: "EMAIL_PASS",
     sensitive: true,
     doc: "The password for the email account",
+  },
+  twilio: {
+    accountSid: {
+      format: String,
+      default: "",
+      env: "TWILIO_SID",
+      sensitive: true,
+      doc: "Twilio Account SID",
+    },
+    authToken: {
+      format: String,
+      default: "",
+      env: "TWILIO_AUTH_TOKEN",
+      sensitive: true,
+      doc: "Twilio Auth Token",
+    },
+    phoneNumber: {
+      format: String,
+      default: "",
+      env: "TWILIO_PHONE_NUMBER",
+      doc: "Twilio purchased phone number in E.164 format (+1234567890)",
+    },
   },
 });
 

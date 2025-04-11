@@ -1,5 +1,6 @@
 import { QueryBuilder } from "./helper";
 import { EmailService } from "../services";
+import Container from "typedi";
 
 class ReminderDao {
   reminderJoin = `
@@ -34,7 +35,8 @@ class ReminderDao {
       await client.query("COMMIT");
       for (const reminder of res.rows) {
         try {
-          await EmailService.sendMail({
+          const emailService = Container.get(EmailService);
+          await emailService.sendMail({
             to: "jatinsiwach2501@gmail.com",
             subject: "Reminder notification",
             text: reminder.message,
