@@ -33,7 +33,7 @@ CREATE TABLE user_details (
   reserve1 VARCHAR(1), -- reserved column	
   reserve2 VARCHAR(1), -- reserved column	
   reserve3 VARCHAR(1), -- reserved column	
-  reserve4 VARCHAR(1), -- reserved column
+  is_mfa_enabled BOOLEAN NOT NULL DEFAULT FALSE, 
   created_on TIMESTAMPTZ DEFAULT current_timestamp,
   created_by BIGINT NOT NULL,
   updated_on TIMESTAMPTZ DEFAULT current_timestamp,

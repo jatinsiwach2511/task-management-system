@@ -1,6 +1,6 @@
-import moment from "moment";
-import { PasswordHash, userUpdateMap, userDetailsUpdateMap } from "../models";
-import { Role } from "../auth";
+import moment from 'moment';
+import { PasswordHash, userUpdateMap, userDetailsUpdateMap } from '../models';
+import { Role } from '../auth';
 import {
   QueryBuilder,
   Mapper,
@@ -8,7 +8,7 @@ import {
   parserId,
   parserDate,
   parserInteger,
-} from "./helper";
+} from './helper';
 
 class UserDao {
   userJoins = `LEFT JOIN user_roles ur ON ur.user_id = u.id
@@ -17,11 +17,11 @@ class UserDao {
                   LEFT JOIN user_login_details uld ON uld.user_id = u.id\n`;
 
   userQuery = `SELECT u.id,u.email,u.password,u.status,u.created_on,r.name as role, ud.first_name,
-                ud.last_name,uld.wrong_login_count, uld.last_wrong_login_attempt, uld.last_login
+                ud.last_name, ud.is_mfa_enabled, uld.wrong_login_count, uld.last_wrong_login_attempt, uld.last_login
                 FROM users u\n${this.userJoins}`;
 
   async createUser(client, createUserDto, createdBy) {
-    client.query("BEGIN");
+    client.query('BEGIN');
     const res = await client.query(
       `INSERT INTO users 
       (email, password, status, created_by, updated_by) 
@@ -51,23 +51,23 @@ class UserDao {
         createUserDto.timeZone,
       ]
     );
-    client.query("COMMIT");
+    client.query('COMMIT');
     return userId;
   }
 
   async updateUser(client, updateUserDto) {
     const { sql: sql1, args: args1 } = Queries.updaterFor(
-      "users",
+      'users',
       userUpdateMap,
       updateUserDto
     );
     const res1 = await client.query(sql1, args1);
 
     const { sql: sql2, args: args2 } = Queries.updaterFor(
-      "user_details",
+      'user_details',
       userDetailsUpdateMap,
       updateUserDto,
-      "user_id"
+      'user_id'
     );
     const res2 = await client.query(sql2, args2);
 
@@ -142,7 +142,7 @@ class UserDao {
   }
 
   async deleteUserById(client, id) {
-    const res = await client.query("DELETE FROM users WHERE id = $1", [id]);
+    const res = await client.query('DELETE FROM users WHERE id = $1', [id]);
     return res.rowCount === 1;
   }
 
@@ -163,7 +163,7 @@ class UserDao {
     );
 
     if (ignoreId) {
-      qb.append("AND id != ?", [ignoreId]);
+      qb.append('AND id != ?', [ignoreId]);
     }
 
     const { sql, args } = qb.build();
@@ -207,6 +207,7 @@ class UserDao {
       status: firstRow.status,
       firstName: firstRow.first_name,
       lastName: firstRow.last_name,
+      is_mfa_enabled: firstRow.is_mfa_enabled,
       wrongLoginCount: parserInteger(firstRow.wrong_login_count),
       lastWrongLoginAttempt: parserDate(firstRow.last_wrong_login_attempt),
       lastLogin: parserDate(firstRow.last_login),

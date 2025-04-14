@@ -1,16 +1,16 @@
-import { Container } from "typedi";
-import jwt from "jsonwebtoken";
-import moment from "moment";
-import config from "../config";
+import { Container } from 'typedi';
+import jwt from 'jsonwebtoken';
+import moment from 'moment';
+import config from '../config';
 import {
   HttpException,
   encrypt,
   decrypt,
   formatErrorResponse,
   STATUS,
-} from "../utils";
-import { Authentication, Right, TokenValidationResult, Role } from "../auth";
-import UserService from "./userService";
+} from '../utils';
+import { Authentication, Right, TokenValidationResult, Role } from '../auth';
+import UserService from './userService';
 
 class SecurityService {
   static TOKEN_EXPIRATION_MINUTES = 1;
@@ -24,7 +24,7 @@ class SecurityService {
   static ACCOUNT_BLOCK_HOURS = 1;
 
   constructor() {
-    this.txs = Container.get("DbTransactions");
+    this.txs = Container.get('DbTransactions');
     this.userService = Container.get(UserService);
   }
 
@@ -41,9 +41,9 @@ class SecurityService {
 
   async login(ipAddress, email, password) {
     return await this.txs.withTransaction(async (client) => {
-      const messageKey = "login";
+      const messageKey = 'login';
       const invalidLoginErr = new HttpException.Forbidden(
-        formatErrorResponse(messageKey, "invalidCredentials")
+        formatErrorResponse(messageKey, 'invalidCredentials')
       );
       const user = await this.userService.findUserByEmail(client, email);
       if (!user || !user.passwordHash) {
@@ -52,7 +52,7 @@ class SecurityService {
 
       if (SecurityService.accountBlocked(user)) {
         throw new HttpException.Forbidden(
-          formatErrorResponse(messageKey, "accountBlocked")
+          formatErrorResponse(messageKey, 'accountBlocked')
         );
       }
 
@@ -61,15 +61,27 @@ class SecurityService {
       if (validPassword && (await this.canLogin(user))) {
         const roleIds = user.roles.map((role) => role.getId());
         const type = Math.max(...roleIds);
-        const token = SecurityService.createToken(
-          ipAddress,
-          user.email,
-          config.authTokens.audience.app,
-          type,
-          !user.lastLogin
-        );
-        await this.postLoginActions(client, user.id);
-        return { token };
+        if (!user.is_mfa_enabled) {
+          const token = SecurityService.createToken(
+            ipAddress,
+            user.email,
+            config.authTokens.audience.app,
+            type,
+            !user.lastLogin
+          );
+          await this.postLoginActions(client, user.id);
+          return { token };
+        } else {
+          const token = SecurityService.createTempToken(
+            ipAddress,
+            user.email,
+            config.authTokens.audience.app,
+            type,
+            !user.lastLogin
+          );
+          await this.postLoginActions(client, user.id);
+          return { token };
+        }
       }
       this.updateUserWrongLoginCount(user);
       throw invalidLoginErr;
@@ -104,17 +116,17 @@ class SecurityService {
     ) {
       const bolckedTill = user.lastWrongLoginAttempt
         .clone()
-        .add(SecurityService.ACCOUNT_BLOCK_HOURS, "hour");
+        .add(SecurityService.ACCOUNT_BLOCK_HOURS, 'hour');
       blocked = bolckedTill.isAfter();
     }
     return blocked;
   }
 
   async canLogin(user) {
-    const messageKey = "user";
+    const messageKey = 'user';
     if (user.status !== STATUS.ACTIVE) {
       throw new HttpException.Unauthorized(
-        formatErrorResponse(messageKey, "inactiveUser")
+        formatErrorResponse(messageKey, 'inactiveUser')
       );
     }
 
@@ -135,6 +147,7 @@ class SecurityService {
       iss: config.authTokens.issuer,
       sub: encrypt(email),
       aud: config.authTokens.audience.web,
+      type: config.authTokens.tokenType.access,
       version: config.authTokens.version,
       exp2: {
         ip: ipAddress,
@@ -153,7 +166,7 @@ class SecurityService {
       algorithm: config.authTokens.algorithm,
     });
   }
-  
+
   static createTempToken(ipAddress, email, aud, firstLogin) {
     const payload = {
       exp: SecurityService.expiryTimeStamp(
@@ -164,6 +177,7 @@ class SecurityService {
       iss: config.authTokens.issuer,
       sub: encrypt(email),
       aud: config.authTokens.audience.web,
+      type: config.authTokens.tokenType.preAuth,
       version: config.authTokens.version,
       exp2: {
         ip: ipAddress,
@@ -188,7 +202,7 @@ class SecurityService {
   }
 
   static expiryTimeStamp(time) {
-    return moment().add(time, "minute").unix();
+    return moment().add(time, 'minute').unix();
   }
 
   async validateToken(ip, payload) {
@@ -220,7 +234,8 @@ class SecurityService {
 
       return new TokenValidationResult(
         TokenValidationResult.tokenValidationStatus.VALID,
-        user
+        user,
+        SecurityService.tokenType(payload)
       );
     } catch (e) {
       return new TokenValidationResult(
@@ -249,6 +264,12 @@ class SecurityService {
 
   static isOldVersion(payload) {
     return config.authTokens.version !== payload.version;
+  }
+
+  static tokenType(payload) {
+    return payload.type === config.authTokens.tokenType.access
+      ? config.authTokens.tokenType.access
+      : config.authTokens.tokenType.preAuth;
   }
 }
 
