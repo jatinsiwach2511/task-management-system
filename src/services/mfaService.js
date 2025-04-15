@@ -9,7 +9,7 @@ import {
   formatErrorResponse,
   formatSuccessResponse,
   messageResponse,
-  VERIFICATION_purpose,
+  VERIFICATION_PURPOSE,
 } from '../utils';
 import { EmailService, SecurityService, smsService } from './index';
 import { Password } from '../models';
@@ -21,7 +21,6 @@ class mfaService {
     this.dao = Container.get(mfaDao);
     this.emailService = Container.get(EmailService);
     this.smsService = Container.get(smsService);
-    this.securityService = Container.get(SecurityService);
   }
   static generateSecret(identifier = 'user') {
     const secret = speakeasy.generateSecret({
@@ -154,7 +153,31 @@ class mfaService {
     });
   }
 
-  async verifyAllMethods(actionUser) {
+  async completeMfa(actionUser) {
+    const messageKey = 'completeMfa';
+    return this.txs.withTransaction(async (client) => {
+      const data = await this.dao.isMfaFullyVerified(
+        client,
+        actionUser.id,
+        VERIFICATION_PURPOSE.MFASETUP
+      );
+      const { email_verified, phone_verified, totp_verified } = data;
+      if (email_verified && phone_verified && totp_verified) {
+        await this.dao.migrateEmailMfaRecord(client, actionUser.id);
+
+        await this.dao.migratePhoneMfaRecord(client, actionUser.id);
+
+        await this.dao.migrateTotpMfaRecord(client, actionUser.id);
+
+        await this.dao.enableMfa(client, actionUser.id);
+
+        return messageResponse(formatSuccessResponse(messageKey, 'success'));
+      }
+      return messageResponse(formatSuccessResponse(messageKey, 'failed'));
+    });
+  }
+
+  async verifyAllMethods(securityServiceObj, actionUser) {
     return this.txs.withTransaction(async (client) => {
       try {
         const messageKey = 'verifyAllMethods';
@@ -172,12 +195,16 @@ class mfaService {
           type,
           !actionUser.lastLogin
         );
-        await this.securityService.postLoginActions(client, actionUser.id);
+        await securityServiceObj.postLoginActions(client, actionUser.id);
         return { token };
       } catch (err) {
         throw err;
       }
     });
+  }
+
+  async getUserSelectedMfaMethods(client, userId) {
+    return await this.dao.getUserSelectedMfaMethods(client, userId);
   }
 }
 

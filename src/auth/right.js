@@ -38,6 +38,7 @@ class Right {
     UPDATE_TASK_DUE_DATE: 'UPDATE_TASK_DUE_DATE',
     UPDATE_USER_TASK: 'UPDATE_USER_TASK',
     SETUP_MFA: 'SETUP_MFA',
+    COMPLETE_MFA: 'COMPLETE_MFA',
   });
 
   static userMfa = Object.freeze({

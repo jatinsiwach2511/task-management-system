@@ -1,4 +1,4 @@
-const API_ROOT_V1 = '/api/v1';
+const API_ROOT_V1 = "/api/v1";
 const USER_ROOT = `${API_ROOT_V1}/user`;
 const TASK_ROOT = `${API_ROOT_V1}/task`;
 const MFA_ROOT = `${API_ROOT_V1}/mfa`;
@@ -19,6 +19,7 @@ export default Object.freeze({
     VERIFY_USER_PHONE: `${MFA_ROOT}/verify-phone`,
     VALIDATE_TOTP: `${MFA_ROOT}/validate-totp`,
     VERIFY_USER_TOTP: `${MFA_ROOT}/verify-totp`,
+    COMPLETE_MFA: `${MFA_ROOT}/complete-mfa`,
     VERIFY_ALL_METHODS: `${MFA_ROOT}/verify-all-methods`,
   },
   user: {

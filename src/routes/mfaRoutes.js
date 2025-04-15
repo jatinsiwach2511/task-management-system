@@ -1,7 +1,7 @@
 import { Container } from 'typedi';
 import { routes, featureLevel, get, post } from './utils';
 import { setupMfa, verifyOtp } from '../models/schemas';
-import { mfaService } from '../services';
+import { mfaService, SecurityService } from '../services';
 import { Right } from '../auth';
 import { VERIFICATION_PURPOSE } from '../utils';
 
@@ -111,11 +111,24 @@ export default () => {
 
   get(
     featureLevel.production,
+    Right.user.COMPLETE_MFA,
+    routes.mfa.COMPLETE_MFA,
+    async (req) => {
+      const service = Container.get(mfaService);
+      return await service.completeMfa({ ...req.currentUser });
+    }
+  );
+
+  get(
+    featureLevel.production,
     Right.userMfa.VERIFY_ALL_METHODS,
     routes.mfa.VERIFY_ALL_METHODS,
     async (req) => {
       const service = Container.get(mfaService);
-      return await service.verifyAllMethods({ ...req.currentUser });
+      const securityService = Container.get(SecurityService);
+      return await service.verifyAllMethods(securityService, {
+        ...req.currentUser,
+      });
     }
   );
 };

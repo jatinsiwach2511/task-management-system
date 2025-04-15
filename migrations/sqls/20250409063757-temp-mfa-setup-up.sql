@@ -8,7 +8,7 @@ CREATE TABLE mfa_email_method (
     id BIGSERIAL PRIMARY KEY,
     userid BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     email email_type NOT NULL,
-    verification_token CHAR(6) NOT NULL, 
+    verification_token CHAR(6), 
     is_verified BOOLEAN DEFAULT false,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     token_expires_at TIMESTAMPTZ NOT NULL DEFAULT (NOW() + INTERVAL '15 minutes')
@@ -39,7 +39,6 @@ CREATE TABLE temp_mfa_email_method (
     id BIGSERIAL PRIMARY KEY,
     userid BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     email email_type NOT NULL,
-
     verification_token CHAR(6), 
     is_verified BOOLEAN DEFAULT false,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),

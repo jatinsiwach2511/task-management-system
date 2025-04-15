@@ -8,6 +8,7 @@ import {
   decrypt,
   formatErrorResponse,
   STATUS,
+  VERIFICATION_PURPOSE,
 } from '../utils';
 import { Authentication, Right, TokenValidationResult, Role } from '../auth';
 import UserService from './userService';
@@ -74,15 +75,21 @@ class SecurityService {
           await this.postLoginActions(client, user.id);
           return { token };
         } else {
+          const methods = await this.mfaService.getUserSelectedMfaMethods(client, user.id)
           const token = SecurityService.createTempToken(
             ipAddress,
             user.email,
             config.authTokens.audience.app,
             type,
             !user.lastLogin,
-            user.methods // ['email', "phone"]
+            Object.keys(methods) // {email: "abc@gamil.com, phone: '1234567890"}
           );
-          await this.mfaService.sendOtps(user.id, user.methods);
+          await this.mfaService.sendOtps(
+            client,
+            methods,
+            user,
+            VERIFICATION_PURPOSE.LOGIN
+          );
           return { token };
         }
       }
@@ -170,7 +177,7 @@ class SecurityService {
     });
   }
 
-  static createTempToken(ipAddress, email, aud, firstLogin, methods) {
+  static createTempToken(ipAddress, email, aud, firstLogin, methods = []) {
     const payload = {
       exp: SecurityService.expiryTimeStamp(
         SecurityService.TEMP_TOKEN_EXPIRATION_MINUTES
