@@ -19,7 +19,7 @@ export default Object.freeze({
     VERIFY_USER_PHONE: `${MFA_ROOT}/verify-phone`,
     VALIDATE_TOTP: `${MFA_ROOT}/validate-totp`,
     VERIFY_USER_TOTP: `${MFA_ROOT}/verify-totp`,
-    COMPLETE_MFA: `${MFA_ROOT}/mfa/complete-mfa`,
+    COMPLETE_MFA: `${MFA_ROOT}/complete-mfa`,
   },
   user: {
     PROFILE: `${USER_ROOT}/profile`,
