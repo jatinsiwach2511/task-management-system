@@ -9,7 +9,7 @@ import {
   formatErrorResponse,
   formatSuccessResponse,
   messageResponse,
-  VERIFICATION_purpose,
+  VERIFICATION_PURPOSE,
 } from "../utils";
 import { EmailService, smsService } from "./index";
 import { Password } from "../models";
@@ -140,6 +140,29 @@ class mfaService {
       );
       if (isvalidOtp) {
         await this.dao.verifyTotp(client, actionUser.id, purpose);
+        return messageResponse(formatSuccessResponse(messageKey, "success"));
+      }
+      return messageResponse(formatSuccessResponse(messageKey, "failed"));
+    });
+  }
+  async completeMfa(actionUser) {
+    const messageKey = "completeMfa";
+    return this.txs.withTransaction(async (client) => {
+      const data = await this.dao.isMfaFullyVerified(
+        client,
+        actionUser.id,
+        VERIFICATION_PURPOSE.MFASETUP
+      );
+      const { email_verified, phone_verified, totp_verified } = data;
+      if (email_verified && phone_verified && totp_verified) {
+        await this.dao.migrateEmailMfaRecord(client, actionUser.id);
+
+        await this.dao.migratePhoneMfaRecord(client, actionUser.id);
+
+        await this.dao.migrateTotpMfaRecord(client, actionUser.id);
+
+        await this.dao.enableMfa(client, actionUser.id);
+
         return messageResponse(formatSuccessResponse(messageKey, "success"));
       }
       return messageResponse(formatSuccessResponse(messageKey, "failed"));

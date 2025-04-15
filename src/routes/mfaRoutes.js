@@ -108,4 +108,13 @@ export default () => {
       );
     }
   );
+  get(
+    featureLevel.production,
+    Right.user.SETUP_MFA,
+    routes.mfa.COMPLETE_MFA,
+    async (req) => {
+      const service = Container.get(mfaService);
+      return await service.completeMfa({ ...req.currentUser });
+    }
+  );
 };

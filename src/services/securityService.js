@@ -59,17 +59,20 @@ class SecurityService {
       const validPassword = await user.passwordHash.check(password);
 
       if (validPassword && (await this.canLogin(user))) {
-        const roleIds = user.roles.map((role) => role.getId());
-        const type = Math.max(...roleIds);
-        const token = SecurityService.createToken(
-          ipAddress,
-          user.email,
-          config.authTokens.audience.app,
-          type,
-          !user.lastLogin
-        );
-        await this.postLoginActions(client, user.id);
-        return { token };
+        if (await this.ismfaEnabled(client, user.id)) {
+        } else {
+          const roleIds = user.roles.map((role) => role.getId());
+          const type = Math.max(...roleIds);
+          const token = SecurityService.createToken(
+            ipAddress,
+            user.email,
+            config.authTokens.audience.app,
+            type,
+            !user.lastLogin
+          );
+          await this.postLoginActions(client, user.id);
+          return { token };
+        }
       }
       this.updateUserWrongLoginCount(user);
       throw invalidLoginErr;

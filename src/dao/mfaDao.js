@@ -11,6 +11,10 @@ class mfaDao {
     } FROM ${tableName} WHERE userid=$1`;
   };
 
+  static mfaStatus = (tableName) => {
+    return `SELECT is_verified FROM ${tableName} WHERE userid = $1 LIMIT 1`;
+  };
+
   async pushTempEmailOtp(client, dto, userId) {
     const qb = new QueryBuilder(mfaDao.upsert("temp_mfa_email_method"), [
       userId,
@@ -39,7 +43,6 @@ VALUES (?,?,?)`,
     return true;
   }
   async addTempMfaSecret(client, dto, userId) {
-    console.log("===dto", dto);
     const qb = new QueryBuilder(mfaDao.upsert("temp_mfa_totp_method"), [
       userId,
     ]);
@@ -53,7 +56,6 @@ VALUES (?,?)`,
     return true;
   }
   async addMfaSecret(client, dto, userId) {
-    console.log("===dto", dto);
     const qb = new QueryBuilder(mfaDao.upsert("mfa_totp_method"), [userId]);
     qb.append(
       `INSERT INTO mfa_totp_method (userid,authenticator_secret) 
@@ -131,6 +133,63 @@ VALUES (?,?)`,
       [true, userId]
     );
     return true;
+  }
+
+  async isMfaFullyVerified(client, userId, purpose) {
+    const tablePrefix =
+      purpose === VERIFICATION_PURPOSE.MFASETUP ? "temp_" : "";
+    const qb = new QueryBuilder(
+      `SELECT COALESCE( (${mfaDao.mfaStatus(
+        `${tablePrefix}mfa_email_method`
+      )} ),true) AS email_verified,`
+    );
+    qb.append(
+      ` COALESCE( (${mfaDao.mfaStatus(
+        `${tablePrefix}mfa_phone_method`
+      )} ),true) AS phone_verified,`
+    );
+    qb.append(
+      ` COALESCE( (${mfaDao.mfaStatus(
+        `${tablePrefix}mfa_totp_method`
+      )} ),true) AS totp_verified`,
+      [userId]
+    );
+    const { sql, args } = qb.build();
+    const res = await client.query(sql, args);
+    return res.rows[0];
+  }
+  async migrateEmailMfaRecord(client, userId) {
+    await client.query(
+      "INSERT INTO mfa_email_method (userid, email) SELECT userid,email FROM temp_mfa_email_method WHERE id = $1;",
+      [userId]
+    );
+    await client.query("DELETE FROM temp_mfa_email_method WHERE id = $1;", [
+      userId,
+    ]);
+  }
+  async migratePhoneMfaRecord(client, userId) {
+    await client.query(
+      "INSERT INTO mfa_phone_method (userid, phone) SELECT userid,phone FROM temp_mfa_phone_method WHERE id = $1;",
+      [userId]
+    );
+    await client.query("DELETE FROM temp_mfa_phone_method WHERE id = $1;", [
+      userId,
+    ]);
+  }
+  async migrateTotpMfaRecord(client, userId) {
+    await client.query(
+      "INSERT INTO mfa_totp_method (userid, authenticator_secret) SELECT userid,authenticator_secret FROM temp_mfa_totp_method WHERE id = $1;",
+      [userId]
+    );
+    await client.query("DELETE FROM temp_mfa_totp_method WHERE id = $1;", [
+      userId,
+    ]);
+  }
+  async enableMfa(client, userId) {
+    await client.query(`UPDATE users SET is_mfa_enabled =$1 WHERE id = $2`, [
+      true,
+      userId,
+    ]);
   }
 }
 export default mfaDao;
