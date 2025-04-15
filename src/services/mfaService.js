@@ -1,27 +1,27 @@
-import { Container } from 'typedi';
-import { mfaDao } from '../dao';
-import { Promise } from 'bluebird';
-import speakeasy from 'speakeasy';
-import qrcode from 'qrcode';
+import { Container } from "typedi";
+import { mfaDao } from "../dao";
+import { Promise } from "bluebird";
+import speakeasy from "speakeasy";
+import qrcode from "qrcode";
 import {
   HttpException,
   formatErrorResponse,
   formatSuccessResponse,
   messageResponse,
   VERIFICATION_PURPOSE,
-} from '../utils';
-import { EmailService, SecurityService, smsService } from './index';
-import { Password } from '../models';
-import config from '../config';
+} from "../utils";
+import { EmailService, SecurityService, smsService } from "./index";
+import { Password } from "../models";
+import config from "../config";
 
 class mfaService {
   constructor() {
-    this.txs = Container.get('DbTransactions');
+    this.txs = Container.get("DbTransactions");
     this.dao = Container.get(mfaDao);
     this.emailService = Container.get(EmailService);
     this.smsService = Container.get(smsService);
   }
-  static generateSecret(identifier = 'user') {
+  static generateSecret(identifier = "user") {
     const secret = speakeasy.generateSecret({
       name: `TaskManagement:${identifier}`,
       length: 20,
@@ -37,7 +37,7 @@ class mfaService {
   static async validateTotp(secret, token) {
     return speakeasy.totp.verify({
       secret: secret,
-      encoding: 'base32',
+      encoding: "base32",
       token: token,
       window: 1,
     });
@@ -46,7 +46,7 @@ class mfaService {
   async sendEmailOtp(email, otp) {
     this.emailService.sendMail({
       to: email,
-      subject: 'MFA otp verification',
+      subject: "MFA otp verification",
       text: `Your OTP for email verification is ${otp}`,
     });
   }
@@ -82,38 +82,37 @@ class mfaService {
           break;
 
         case "totp":
-          console.log("====1");
           const secret = mfaService.generateSecret(actionUser.firstName);
-          console.log("====2");
+
           await this.dao.addTempMfaSecret(
             client,
             { secret: secret.base32 },
             actionUser.id,
             purpose
           );
-          console.log("====3");
+
           const asyncUrlGenerateFunc = Promise.promisify(qrcode.toDataURL, {
             multiArgs: true,
             context: qrcode,
           });
-          console.log("====4");
+
           const data = await asyncUrlGenerateFunc(secret.otpauth_url);
           totp = data;
-          console.log("====5");
+
           break;
       }
-      return totp;
     }
+    return totp;
   }
   async setupMfa(actionUser, dto, client) {
     const options = dto?.selectedMethods || [];
-    const messageKey = 'setupMfa';
+    const messageKey = "setupMfa";
     const formattedMethods = {};
     for (const method of options) {
-      if (method !== 'totp') {
+      if (method !== "totp") {
         if (!dto[method]) {
           throw new HttpException.BadRequest(
-            formatErrorResponse(messageKey, 'methodRequired')
+            formatErrorResponse(messageKey, "methodRequired")
           );
         }
         formattedMethods[method] = dto[method];
@@ -130,51 +129,52 @@ class mfaService {
     if (totp) {
       return { qrCode: totp };
     }
-    return messageResponse(formatSuccessResponse(messageKey, 'sent'));
+    return messageResponse(formatSuccessResponse(messageKey, "sent"));
   }
 
   async verifyEmail(actionUser, dto, purpose) {
-    const messageKey = 'verifyEmail';
+    const messageKey = "verifyEmail";
     return this.txs.withTransaction(async (client) => {
       const res = await this.dao.getEmailOtp(client, actionUser.id, purpose);
       if (dto.otp === res.verification_token) {
         await this.dao.verifyEmail(client, actionUser.id, purpose);
-        return messageResponse(formatSuccessResponse(messageKey, 'success'));
+        return messageResponse(formatSuccessResponse(messageKey, "success"));
       }
-      return messageResponse(formatSuccessResponse(messageKey, 'failed'));
+      return messageResponse(formatSuccessResponse(messageKey, "failed"));
     });
   }
 
   async verifyPhone(actionUser, dto, purpose) {
-    const messageKey = 'verifyPhone';
+    const messageKey = "verifyPhone";
     return this.txs.withTransaction(async (client) => {
       const res = await this.dao.getMobileOtp(client, actionUser.id, purpose);
       if (dto.otp === res.verification_token) {
         await this.dao.verifyPhone(client, actionUser.id, purpose);
-        return messageResponse(formatSuccessResponse(messageKey, 'success'));
+        return messageResponse(formatSuccessResponse(messageKey, "success"));
       }
-      return messageResponse(formatSuccessResponse(messageKey, 'failed'));
+      return messageResponse(formatSuccessResponse(messageKey, "failed"));
     });
   }
 
   async verifyTotp(actionUser, dto, purpose) {
-    const messageKey = 'verifyTotp';
+    const messageKey = "verifyTotp";
     return this.txs.withTransaction(async (client) => {
       const res = await this.dao.gettotpSecret(client, actionUser.id, purpose);
       const isvalidOtp = await mfaService.validateTotp(
         res.authenticator_secret,
         dto.otp
       );
+      console.log("isvalidotp===", isvalidOtp);
       if (isvalidOtp) {
         await this.dao.verifyTotp(client, actionUser.id, purpose);
-        return messageResponse(formatSuccessResponse(messageKey, 'success'));
+        return messageResponse(formatSuccessResponse(messageKey, "success"));
       }
-      return messageResponse(formatSuccessResponse(messageKey, 'failed'));
+      return messageResponse(formatSuccessResponse(messageKey, "failed"));
     });
   }
 
   async completeMfa(actionUser) {
-    const messageKey = 'completeMfa';
+    const messageKey = "completeMfa";
     return this.txs.withTransaction(async (client) => {
       const data = await this.dao.isMfaFullyVerified(
         client,
@@ -191,20 +191,24 @@ class mfaService {
 
         await this.dao.enableMfa(client, actionUser.id);
 
-        return messageResponse(formatSuccessResponse(messageKey, 'success'));
+        return messageResponse(formatSuccessResponse(messageKey, "success"));
       }
-      return messageResponse(formatSuccessResponse(messageKey, 'failed'));
+      return messageResponse(formatSuccessResponse(messageKey, "failed"));
     });
   }
 
   async verifyAllMethods(securityServiceObj, actionUser) {
     return this.txs.withTransaction(async (client) => {
       try {
-        const messageKey = 'verifyAllMethods';
-        const success = await this.dao.verifyAllMethods(client, actionUser.id);
+        const messageKey = "verifyAllMethods";
+        const success = await this.dao.isMfaFullyVerified(
+          client,
+          actionUser.id,
+          VERIFICATION_PURPOSE.LOGIN
+        );
         if (!success)
           throw new HttpException.BadRequest(
-            formatErrorResponse(messageKey, 'notVerified')
+            formatErrorResponse(messageKey, "notVerified")
           );
         const roleIds = actionUser.roles.map((role) => role.getId());
         const type = Math.max(...roleIds);

@@ -1,7 +1,7 @@
-import { Container } from 'typedi';
-import jwt from 'jsonwebtoken';
-import moment from 'moment';
-import config from '../config';
+import { Container } from "typedi";
+import jwt from "jsonwebtoken";
+import moment from "moment";
+import config from "../config";
 import {
   HttpException,
   encrypt,
@@ -9,10 +9,10 @@ import {
   formatErrorResponse,
   STATUS,
   VERIFICATION_PURPOSE,
-} from '../utils';
-import { Authentication, Right, TokenValidationResult, Role } from '../auth';
-import UserService from './userService';
-import mfaService from './mfaService';
+} from "../utils";
+import { Authentication, Right, TokenValidationResult, Role } from "../auth";
+import UserService from "./userService";
+import mfaService from "./mfaService";
 
 class SecurityService {
   static TOKEN_EXPIRATION_MINUTES = 1;
@@ -26,7 +26,7 @@ class SecurityService {
   static ACCOUNT_BLOCK_HOURS = 1;
 
   constructor() {
-    this.txs = Container.get('DbTransactions');
+    this.txs = Container.get("DbTransactions");
     this.userService = Container.get(UserService);
     this.mfaService = Container.get(mfaService);
   }
@@ -44,9 +44,9 @@ class SecurityService {
 
   async login(ipAddress, email, password) {
     return await this.txs.withTransaction(async (client) => {
-      const messageKey = 'login';
+      const messageKey = "login";
       const invalidLoginErr = new HttpException.Forbidden(
-        formatErrorResponse(messageKey, 'invalidCredentials')
+        formatErrorResponse(messageKey, "invalidCredentials")
       );
       const user = await this.userService.findUserByEmail(client, email);
       if (!user || !user.passwordHash) {
@@ -55,7 +55,7 @@ class SecurityService {
 
       if (SecurityService.accountBlocked(user)) {
         throw new HttpException.Forbidden(
-          formatErrorResponse(messageKey, 'accountBlocked')
+          formatErrorResponse(messageKey, "accountBlocked")
         );
       }
 
@@ -75,7 +75,10 @@ class SecurityService {
           await this.postLoginActions(client, user.id);
           return { token };
         } else {
-          const methods = await this.mfaService.getUserSelectedMfaMethods(client, user.id)
+          const methods = await this.mfaService.getUserSelectedMfaMethods(
+            client,
+            user.id
+          );
           const token = SecurityService.createTempToken(
             ipAddress,
             user.email,
@@ -84,6 +87,7 @@ class SecurityService {
             !user.lastLogin,
             Object.keys(methods) // {email: "abc@gamil.com, phone: '1234567890"}
           );
+          console.log("the methods are======0", methods);
           await this.mfaService.sendOtps(
             client,
             methods,
@@ -126,17 +130,17 @@ class SecurityService {
     ) {
       const bolckedTill = user.lastWrongLoginAttempt
         .clone()
-        .add(SecurityService.ACCOUNT_BLOCK_HOURS, 'hour');
+        .add(SecurityService.ACCOUNT_BLOCK_HOURS, "hour");
       blocked = bolckedTill.isAfter();
     }
     return blocked;
   }
 
   async canLogin(user) {
-    const messageKey = 'user';
+    const messageKey = "user";
     if (user.status !== STATUS.ACTIVE) {
       throw new HttpException.Unauthorized(
-        formatErrorResponse(messageKey, 'inactiveUser')
+        formatErrorResponse(messageKey, "inactiveUser")
       );
     }
 
@@ -213,7 +217,7 @@ class SecurityService {
   }
 
   static expiryTimeStamp(time) {
-    return moment().add(time, 'minute').unix();
+    return moment().add(time, "minute").unix();
   }
 
   async validateToken(ip, payload) {
