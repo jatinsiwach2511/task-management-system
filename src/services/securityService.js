@@ -11,6 +11,7 @@ import {
 } from '../utils';
 import { Authentication, Right, TokenValidationResult, Role } from '../auth';
 import UserService from './userService';
+import mfaService from './mfaService';
 
 class SecurityService {
   static TOKEN_EXPIRATION_MINUTES = 1;
@@ -26,6 +27,7 @@ class SecurityService {
   constructor() {
     this.txs = Container.get('DbTransactions');
     this.userService = Container.get(UserService);
+    this.mfaService = Container.get(mfaService);
   }
 
   async updateUserWrongLoginCount(user) {
@@ -77,9 +79,10 @@ class SecurityService {
             user.email,
             config.authTokens.audience.app,
             type,
-            !user.lastLogin
+            !user.lastLogin,
+            user.methods // ['email', "phone"]
           );
-          await this.postLoginActions(client, user.id);
+          await this.mfaService.sendOtps(user.id, user.methods);
           return { token };
         }
       }
@@ -167,7 +170,7 @@ class SecurityService {
     });
   }
 
-  static createTempToken(ipAddress, email, aud, firstLogin) {
+  static createTempToken(ipAddress, email, aud, firstLogin, methods) {
     const payload = {
       exp: SecurityService.expiryTimeStamp(
         SecurityService.TEMP_TOKEN_EXPIRATION_MINUTES
@@ -179,6 +182,7 @@ class SecurityService {
       aud: config.authTokens.audience.web,
       type: config.authTokens.tokenType.preAuth,
       version: config.authTokens.version,
+      methods: methods,
       exp2: {
         ip: ipAddress,
         time: SecurityService.expiryTimeStamp(

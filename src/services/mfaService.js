@@ -11,8 +11,9 @@ import {
   messageResponse,
   VERIFICATION_purpose,
 } from '../utils';
-import { EmailService, smsService } from './index';
+import { EmailService, SecurityService, smsService } from './index';
 import { Password } from '../models';
+import config from '../config';
 
 class mfaService {
   constructor() {
@@ -20,6 +21,7 @@ class mfaService {
     this.dao = Container.get(mfaDao);
     this.emailService = Container.get(EmailService);
     this.smsService = Container.get(smsService);
+    this.securityService = Container.get(SecurityService);
   }
   static generateSecret(identifier = 'user') {
     const secret = speakeasy.generateSecret({
@@ -149,6 +151,32 @@ class mfaService {
         return messageResponse(formatSuccessResponse(messageKey, 'success'));
       }
       return messageResponse(formatSuccessResponse(messageKey, 'failed'));
+    });
+  }
+
+  async verifyAllMethods(actionUser) {
+    return this.txs.withTransaction(async (client) => {
+      try {
+        const messageKey = 'verifyAllMethods';
+        const success = await this.dao.verifyAllMethods(client, actionUser.id);
+        if (!success)
+          throw new HttpException.BadRequest(
+            formatErrorResponse(messageKey, 'notVerified')
+          );
+        const roleIds = actionUser.roles.map((role) => role.getId());
+        const type = Math.max(...roleIds);
+        const token = SecurityService.createToken(
+          actionUser.ip,
+          actionUser.email,
+          config.authTokens.audience.app,
+          type,
+          !actionUser.lastLogin
+        );
+        await this.securityService.postLoginActions(client, actionUser.id);
+        return { token };
+      } catch (err) {
+        throw err;
+      }
     });
   }
 }

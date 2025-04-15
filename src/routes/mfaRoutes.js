@@ -1,9 +1,9 @@
-import { Container } from "typedi";
-import { routes, featureLevel, get, post } from "./utils";
-import { setupMfa, verifyOtp } from "../models/schemas";
-import { mfaService } from "../services";
-import { Right } from "../auth";
-import { VERIFICATION_PURPOSE } from "../utils";
+import { Container } from 'typedi';
+import { routes, featureLevel, get, post } from './utils';
+import { setupMfa, verifyOtp } from '../models/schemas';
+import { mfaService } from '../services';
+import { Right } from '../auth';
+import { VERIFICATION_PURPOSE } from '../utils';
 
 export default () => {
   post(
@@ -13,7 +13,7 @@ export default () => {
     async (req) => {
       const service = Container.get(mfaService);
       const dto = await setupMfa.validateAsync(req.body);
-      const txn = Container.get("DbTransactions");
+      const txn = Container.get('DbTransactions');
       return await txn.withTransaction(async (client) => {
         return await service.setupMfa({ ...req.currentUser }, dto, client);
       });
@@ -65,7 +65,7 @@ export default () => {
   );
   post(
     featureLevel.production,
-    Right.user.SETUP_MFA,
+    Right.userMfa.VERIFY_USER_EMAIL,
     routes.mfa.VERIFY_USER_EMAIL,
     async (req) => {
       const service = Container.get(mfaService);
@@ -80,7 +80,7 @@ export default () => {
   );
   post(
     featureLevel.production,
-    Right.user.SETUP_MFA,
+    Right.userMfa.VERIFY_USER_PHONE,
     routes.mfa.VERIFY_USER_PHONE,
     async (req) => {
       const service = Container.get(mfaService);
@@ -95,7 +95,7 @@ export default () => {
   );
   post(
     featureLevel.production,
-    Right.user.SETUP_MFA,
+    Right.userMfa.VERIFY_USER_TOTP,
     routes.mfa.VERIFY_USER_TOTP,
     async (req) => {
       const service = Container.get(mfaService);
@@ -106,6 +106,16 @@ export default () => {
         dto,
         VERIFICATION_PURPOSE.LOGIN
       );
+    }
+  );
+
+  get(
+    featureLevel.production,
+    Right.userMfa.VERIFY_ALL_METHODS,
+    routes.mfa.VERIFY_ALL_METHODS,
+    async (req) => {
+      const service = Container.get(mfaService);
+      return await service.verifyAllMethods({ ...req.currentUser });
     }
   );
 };
