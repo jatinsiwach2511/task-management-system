@@ -5,14 +5,12 @@ import speakeasy from "speakeasy";
 import qrcode from "qrcode";
 import {
   HttpException,
-  STATUS,
   formatErrorResponse,
   formatSuccessResponse,
   messageResponse,
   VERIFICATION_PURPOSE,
 } from "../utils";
 import { EmailService, smsService } from "./index";
-import { Password } from "../models";
 class mfaService {
   constructor() {
     this.txs = Container.get("DbTransactions");
@@ -49,7 +47,61 @@ class mfaService {
       text: `Your OTP for email verification is ${otp}`,
     });
   }
+  async sendOtps(
+    client,
+    methods,
+    actionUser,
+    purpose = VERIFICATION_PURPOSE.MFASETUP
+  ) {
+    let totp = null;
+    for (const method in methods) {
+      switch (method) {
+        case "email":
+          const otp = mfaService.generateOtp();
+          await this.dao.pushEmailOtp(
+            client,
+            { email: methods[method], otp: otp.toString() },
+            actionUser.id,
+            purpose
+          );
+          await this.sendEmailOtp(methods[method], otp);
+          break;
+        case "phone":
+          const phoneOtp = mfaService.generateOtp();
+          await this.dao.pushPhoneOtp(
+            client,
+            { phone: methods[method], otp: phoneOtp.toString() },
+            actionUser.id,
+            purpose
+          );
+          const otpMessage = `hii there i am you friend want to send this friendly messag ewith a sample otp ${phoneOtp}`;
+          await this.smsService.sendSms(methods[method], otpMessage);
+          break;
 
+        case "totp":
+          console.log("====1");
+          const secret = mfaService.generateSecret(actionUser.firstName);
+          console.log("====2");
+          await this.dao.addTempMfaSecret(
+            client,
+            { secret: secret.base32 },
+            actionUser.id,
+            purpose
+          );
+          console.log("====3");
+          const asyncUrlGenerateFunc = Promise.promisify(qrcode.toDataURL, {
+            multiArgs: true,
+            context: qrcode,
+          });
+          console.log("====4");
+          const data = await asyncUrlGenerateFunc(secret.otpauth_url);
+          totp = data;
+          console.log("====5");
+          break;
+      }
+      return totp;
+    }
+  }
   async setupMfa(actionUser, dto, client) {
     const options = dto?.selectedMethods || [];
     const messageKey = "setupMfa";
@@ -66,45 +118,12 @@ class mfaService {
         formattedMethods[method] = true;
       }
     }
-    let totp = null;
-    for (const method of options) {
-      switch (method) {
-        case "email":
-          const otp = mfaService.generateOtp();
-          const res = await this.dao.pushTempEmailOtp(
-            client,
-            { email: formattedMethods[method], otp: otp.toString() },
-            actionUser.id
-          );
-          await this.sendEmailOtp(formattedMethods[method], otp);
-          break;
-        case "phone":
-          const phoneOtp = mfaService.generateOtp();
-          await this.dao.pushTempPhoneOtp(
-            client,
-            { phone: formattedMethods[method], otp: phoneOtp.toString() },
-            actionUser.id
-          );
-          const otpMessage = `hii there i am you friend want to send this friendly messag ewith a sample otp ${phoneOtp}`;
-          await this.smsService.sendSms(formattedMethods[method], otpMessage);
-          break;
-
-        case "totp":
-          const secret = mfaService.generateSecret(actionUser.firstName);
-          await this.dao.addTempMfaSecret(
-            client,
-            { secret: secret.base32 },
-            actionUser.id
-          );
-          const asyncUrlGenerateFunc = Promise.promisify(qrcode.toDataURL, {
-            multiArgs: true,
-            context: qrcode,
-          });
-          const data = await asyncUrlGenerateFunc(secret.otpauth_url);
-          totp = data;
-          break;
-      }
-    }
+    const totp = await this.sendOtps(
+      client,
+      formattedMethods,
+      actionUser,
+      VERIFICATION_PURPOSE.MFASETUP
+    );
     if (totp) {
       return { qrCode: totp };
     }

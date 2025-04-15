@@ -15,12 +15,15 @@ class mfaDao {
     return `SELECT is_verified FROM ${tableName} WHERE userid = $1 LIMIT 1`;
   };
 
-  async pushTempEmailOtp(client, dto, userId) {
-    const qb = new QueryBuilder(mfaDao.upsert("temp_mfa_email_method"), [
-      userId,
-    ]);
+  async pushEmailOtp(client, dto, userId, purpose) {
+    const tablePrefix =
+      purpose === VERIFICATION_PURPOSE.MFASETUP ? "temp_" : "";
+    const qb = new QueryBuilder(
+      mfaDao.upsert(`${tablePrefix}mfa_email_method`),
+      [userId]
+    );
     qb.append(
-      `INSERT INTO temp_mfa_email_method (userid, email, verification_token) 
+      `INSERT INTO ${tablePrefix}mfa_email_method (userid, email, verification_token) 
 VALUES (?,?,?)`,
       [userId, dto.email, dto.otp]
     );
@@ -29,12 +32,15 @@ VALUES (?,?,?)`,
     return true;
   }
 
-  async pushTempPhoneOtp(client, dto, userId) {
-    const qb = new QueryBuilder(mfaDao.upsert("temp_mfa_phone_method"), [
-      userId,
-    ]);
+  async pushPhoneOtp(client, dto, userId, purpose) {
+    const tablePrefix =
+      purpose === VERIFICATION_PURPOSE.MFASETUP ? "temp_" : "";
+    const qb = new QueryBuilder(
+      mfaDao.upsert(`${tablePrefix}mfa_phone_method`),
+      [userId]
+    );
     qb.append(
-      `INSERT INTO temp_mfa_phone_method (userid,phone, verification_token) 
+      `INSERT INTO ${tablePrefix}mfa_phone_method (userid,phone, verification_token) 
 VALUES (?,?,?)`,
       [userId, dto.phone, dto.otp]
     );
