@@ -186,10 +186,10 @@ VALUES (?,?)`,
     ]);
   }
   async enableMfa(client, userId) {
-    await client.query(`UPDATE users SET is_mfa_enabled =$1 WHERE id = $2`, [
-      true,
-      userId,
-    ]);
+    await client.query(
+      `UPDATE user_details SET is_mfa_enabled =$1 WHERE user_id = $2`,
+      [true, userId]
+    );
   }
 }
 export default mfaDao;

@@ -5,7 +5,6 @@ CREATE TABLE users (
   email VARCHAR(255) UNIQUE NOT NULL,
   password CHAR(60), -- bcrypt hashes are always 60 bytes long
   status VARCHAR(17) NOT NULL,	
-  is_mfa_enabled BOOLEAN DEFAULT false,
   reserve1 VARCHAR(1), -- reserved column	
   reserve2 VARCHAR(1), -- reserved column	
   reserve3 VARCHAR(1), -- reserved column	
