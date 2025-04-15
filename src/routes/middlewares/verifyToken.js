@@ -4,7 +4,7 @@ import { Container } from 'typedi';
 import config from '../../config';
 import { HttpException, formatErrorResponse } from '../../utils';
 import { SecurityService } from '../../services';
-import { TokenValidationResult, Authentication } from '../../auth';
+import { TokenValidationResult, Authentication, Right } from '../../auth';
 
 /**
  * We are assuming that the JWT will come in a header with the form
@@ -61,8 +61,12 @@ const verifyToken = async (req, res, next) => {
               case TokenValidationResult.tokenValidationStatus.NO_SUBSCRIPTION:
                 return next(new HttpException.Unauthorized(formatErrorResponse(messageKey, 'noSubscriptionActive')));
               case TokenValidationResult.tokenValidationStatus.VALID: {
-                const { user } = result;
-                user.rights = Authentication.userEffectiveRights(user);
+                const { user , type } = result;
+                if(type === config.authTokens.tokenType.access) {
+                  user.rights = Authentication.userEffectiveRights(user);
+                } else {
+                  user.rights = Right.userLoginMfaRigts();
+                }
                 user.tokenAud = payload.aud;
                 delete user.passwordHash;
                 req.currentUser = { ...user };

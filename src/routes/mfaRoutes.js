@@ -9,7 +9,7 @@ export default () => {
   post(
     featureLevel.production,
     Right.user.SETUP_MFA,
-    routes.mfa.INIT_MFA,
+    routes.mfa.SETUP_MFA,
     async (req) => {
       const service = Container.get(mfaService);
       const dto = await setupMfa.validateAsync(req.body);

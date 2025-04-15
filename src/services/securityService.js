@@ -59,11 +59,20 @@ class SecurityService {
       const validPassword = await user.passwordHash.check(password);
 
       if (validPassword && (await this.canLogin(user))) {
-        if (await this.ismfaEnabled(client, user.id)) {
-        } else {
-          const roleIds = user.roles.map((role) => role.getId());
-          const type = Math.max(...roleIds);
+        const roleIds = user.roles.map((role) => role.getId());
+        const type = Math.max(...roleIds);
+        if (!user.is_mfa_enabled) {
           const token = SecurityService.createToken(
+            ipAddress,
+            user.email,
+            config.authTokens.audience.app,
+            type,
+            !user.lastLogin
+          );
+          await this.postLoginActions(client, user.id);
+          return { token };
+        } else {
+          const token = SecurityService.createTempToken(
             ipAddress,
             user.email,
             config.authTokens.audience.app,
@@ -138,6 +147,7 @@ class SecurityService {
       iss: config.authTokens.issuer,
       sub: encrypt(email),
       aud: config.authTokens.audience.web,
+      type: config.authTokens.tokenType.access,
       version: config.authTokens.version,
       exp2: {
         ip: ipAddress,
@@ -156,6 +166,7 @@ class SecurityService {
       algorithm: config.authTokens.algorithm,
     });
   }
+
   static createTempToken(ipAddress, email, aud, firstLogin) {
     const payload = {
       exp: SecurityService.expiryTimeStamp(
@@ -166,6 +177,7 @@ class SecurityService {
       iss: config.authTokens.issuer,
       sub: encrypt(email),
       aud: config.authTokens.audience.web,
+      type: config.authTokens.tokenType.preAuth,
       version: config.authTokens.version,
       exp2: {
         ip: ipAddress,
@@ -222,7 +234,8 @@ class SecurityService {
 
       return new TokenValidationResult(
         TokenValidationResult.tokenValidationStatus.VALID,
-        user
+        user,
+        SecurityService.tokenType(payload)
       );
     } catch (e) {
       return new TokenValidationResult(
@@ -251,6 +264,12 @@ class SecurityService {
 
   static isOldVersion(payload) {
     return config.authTokens.version !== payload.version;
+  }
+
+  static tokenType(payload) {
+    return payload.type === config.authTokens.tokenType.access
+      ? config.authTokens.tokenType.access
+      : config.authTokens.tokenType.preAuth;
   }
 }
 
