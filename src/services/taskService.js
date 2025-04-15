@@ -86,14 +86,12 @@ export default class TaskService {
         id,
         actionUser.id
       );
-      console.log(id, actionUser);
       if (!task) {
         throw new HttpException.NotFound(
           formatErrorResponse(messageKey, "notFound")
         );
       }
 
-      console.log("======1");
       const timeZone = await this.userService.dao.getTimeZone(
         client,
         actionUser.id
@@ -247,7 +245,6 @@ export default class TaskService {
         throw new HttpException.NotFound(
           formatErrorResponse(messageKey, "notFound")
         );
-      console.log(userTasks);
       const timeZone = await this.userService.dao.getTimeZone(client, userId);
       return TaskService.makeTasksStatusResponse(userTasks, timeZone);
     });

@@ -140,7 +140,7 @@ class mfaService {
         await this.dao.verifyEmail(client, actionUser.id, purpose);
         return messageResponse(formatSuccessResponse(messageKey, "success"));
       }
-      return messageResponse(formatSuccessResponse(messageKey, "failed"));
+      return messageResponse(formatErrorResponse(messageKey, "failed"));
     });
   }
 
@@ -152,7 +152,7 @@ class mfaService {
         await this.dao.verifyPhone(client, actionUser.id, purpose);
         return messageResponse(formatSuccessResponse(messageKey, "success"));
       }
-      return messageResponse(formatSuccessResponse(messageKey, "failed"));
+      return messageResponse(formatErrorResponse(messageKey, "failed"));
     });
   }
 
@@ -164,12 +164,11 @@ class mfaService {
         res.authenticator_secret,
         dto.otp
       );
-      console.log("isvalidotp===", isvalidOtp);
       if (isvalidOtp) {
         await this.dao.verifyTotp(client, actionUser.id, purpose);
         return messageResponse(formatSuccessResponse(messageKey, "success"));
       }
-      return messageResponse(formatSuccessResponse(messageKey, "failed"));
+      return messageResponse(formatErrorResponse(messageKey, "failed"));
     });
   }
 
@@ -193,7 +192,7 @@ class mfaService {
 
         return messageResponse(formatSuccessResponse(messageKey, "success"));
       }
-      return messageResponse(formatSuccessResponse(messageKey, "failed"));
+      return messageResponse(formatErrorResponse(messageKey, "failed"));
     });
   }
 

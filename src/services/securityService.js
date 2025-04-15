@@ -87,7 +87,6 @@ class SecurityService {
             !user.lastLogin,
             Object.keys(methods) // {email: "abc@gamil.com, phone: '1234567890"}
           );
-          console.log("the methods are======0", methods);
           await this.mfaService.sendOtps(
             client,
             methods,
